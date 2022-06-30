@@ -117,7 +117,7 @@ class Plugin(pwem.Plugin):
     @classmethod
     def getProgram(cls, program, gpus='0'):
         """ Create TomoTwin command line. """
-        fullProgram = '%s && CUDA_VISIBLE_DEVICES=%s tomotwin %s' % (
+        fullProgram = '%s && CUDA_VISIBLE_DEVICES=%s %s' % (
             cls.getActivationCmd(), gpus, program)
 
         return fullProgram
