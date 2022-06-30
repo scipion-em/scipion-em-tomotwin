@@ -86,7 +86,7 @@ class Plugin(pwem.Plugin):
         # try to get CONDA activation command
         installCmds = [
             'wget https://github.com/MPI-Dortmund/tomotwin-cryoet/archive/refs/heads/dev.tar.gz && '
-            'tar -xf dev.tar.gz && cd tomotwin-cryoet-dev && touch VERSION.txt',
+            'tar -xf dev.tar.gz && cd tomotwin-cryoet-dev && echo "alpha" > VERSION.txt;',
             cls.getCondaActivationCmd(),
             'conda create -y -n %s -c pytorch -c rapidsai -c nvidia python=3.9 '
             'pytorch==1.11 torchvision pandas scipy numpy matplotlib pytables '
