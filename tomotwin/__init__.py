@@ -85,13 +85,15 @@ class Plugin(pwem.Plugin):
         ENV_NAME = getTomoTwinEnvName(version)
         # try to get CONDA activation command
         installCmds = [
+            'wget https://github.com/MPI-Dortmund/tomotwin-cryoet/archive/refs/heads/dev.tar.gz && '
+            'tar -xf dev.tar.gz && cd tomotwin-cryoet-dev && touch VERSION.txt',
             cls.getCondaActivationCmd(),
             'conda create -y -n %s -c pytorch -c rapidsai -c nvidia python=3.9 '
             'pytorch==1.11 torchvision pandas scipy numpy matplotlib pytables '
             'rapids=22.04 -c conda-forge;' % ENV_NAME,  # Create the environment
             'conda activate %s;' % ENV_NAME,  # Activate the new environment and install downloaded code
             'pip install -e . &&',
-            'touch %s' % TOMOTWIN_INSTALLED  # Flag installation finished
+            'touch ../%s' % TOMOTWIN_INSTALLED  # Flag installation finished
         ]
 
         tomotwinCmds = [(" ".join(installCmds), TOMOTWIN_INSTALLED)]
@@ -100,7 +102,7 @@ class Plugin(pwem.Plugin):
         # keep path since conda likely in there
         installEnvVars = {'PATH': envPath} if envPath else None
         env.addPackage('tomotwin', version=version,
-                       url='https://github.com/MPI-Dortmund/tomotwin-cryoet/archive/refs/heads/dev.tar.gz',
+                       tar='void.tgz',
                        commands=tomotwinCmds,
                        neededProgs=cls.getDependencies(),
                        default=default,
