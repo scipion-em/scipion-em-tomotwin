@@ -41,7 +41,7 @@ b) Developer's version
 
     .. code-block::
 
-        git clone https://github.com/scipion-em/scipion-em-tomotwin.git
+        git clone -b https://github.com/scipion-em/scipion-em-tomotwin.git
 
    * install
 
