@@ -44,6 +44,7 @@ class Plugin(pwem.Plugin):
     @classmethod
     def _defineVariables(cls):
         cls._defineVar(TOMOTWIN_ENV_ACTIVATION, DEFAULT_ACTIVATION_CMD)
+        cls._defineEmVar(TOMOTWIN_MODEL, DEFAULT_MODEL)
 
     @classmethod
     def getTomoTwinEnvActivation(cls):
@@ -78,6 +79,14 @@ class Plugin(pwem.Plugin):
         for ver in VERSIONS:
             cls.addTomoTwinPackage(env, ver,
                                    default=ver == TOMOTWIN_DEFAULT_VER_NUM)
+
+        url = "https://owncloud.gwdg.de/index.php/s/vfjKoBZc4YtPaGT/download"
+        env.addPackage(TOMOTWIN_MODEL, version="052022",
+                       tar='void.tgz',
+                       commands=[(f"wget -O {DEFAULT_MODEL} {url}",
+                                  DEFAULT_MODEL)],
+                       neededProgs=["wget"],
+                       default=True)
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
