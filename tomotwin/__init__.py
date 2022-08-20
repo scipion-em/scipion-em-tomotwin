@@ -81,22 +81,20 @@ class Plugin(pwem.Plugin):
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
-        TOMOTWIN_INSTALLED = 'tomotwin_%s_installed' % version
         ENV_NAME = getTomoTwinEnvName(version)
-        # try to get CONDA activation command
         installCmds = [
-            'wget https://github.com/MPI-Dortmund/tomotwin-cryoet/archive/refs/heads/dev.tar.gz && '
-            'tar -xf dev.tar.gz && cd tomotwin-cryoet-dev && echo "alpha" > VERSION.txt;',
+            f"cd .. && rmdir tomotwin-{version} &&",
+            f"git clone -b dev https://github.com/MPI-Dortmund/tomotwin-cryoet.git tomotwin-{version} &&",
+            f"cd tomotwin-{version} && git rev-parse --short HEAD > VERSION.txt && ",
             cls.getCondaActivationCmd(),
-            'conda create -y -n %s -c pytorch -c rapidsai -c nvidia python=3.9 '
-            'pytorch==1.11 torchvision pandas scipy numpy matplotlib pytables '
-            'rapids=22.04 -c conda-forge;' % ENV_NAME,  # Create the environment
-            'conda activate %s;' % ENV_NAME,  # Activate the new environment and install downloaded code
-            'pip install -e . &&',
-            'touch ../%s' % TOMOTWIN_INSTALLED  # Flag installation finished
+            f"conda create -y -n {ENV_NAME} -c pytorch -c rapidsai -c nvidia",
+            f"-c conda-forge python=3.9 pytorch==1.12 torchvision pandas scipy",
+            f"numpy matplotlib pytables cuML=22.06 cudatoolkit=11.6 'protobuf>3.20' tensorboard &&",
+            f"conda activate tomotwin-{version} &&",
+            f"pip install -e . && conda remove -y --force cupy",
         ]
 
-        tomotwinCmds = [(" ".join(installCmds), TOMOTWIN_INSTALLED)]
+        tomotwinCmds = [(" ".join(installCmds), "VERSION.txt")]
 
         envPath = os.environ.get('PATH', "")
         # keep path since conda likely in there
