@@ -64,6 +64,8 @@ CONDA_ACTIVATION_CMD = eval "$(/extra/miniconda3/bin/conda shell.bash hook)"
 *TOMOTWIN_ENV_ACTIVATION* (default = conda activate tomotwin-0.1.0):
 Command to activate the TomoTwin environment.
 
+*NAPARI_ENV_ACTIVATION* (default = conda activate napari):
+Command to activate the Napari viewer environment.
 
 Verifying
 ---------

@@ -44,6 +44,7 @@ class Plugin(pwem.Plugin):
     @classmethod
     def _defineVariables(cls):
         cls._defineVar(TOMOTWIN_ENV_ACTIVATION, DEFAULT_ACTIVATION_CMD)
+        cls._defineVar(NAPARI_ENV_ACTIVATION, "conda activate napari")
         cls._defineEmVar(TOMOTWIN_MODEL, DEFAULT_MODEL)
 
     @classmethod
@@ -87,6 +88,13 @@ class Plugin(pwem.Plugin):
                                   DEFAULT_MODEL)],
                        neededProgs=["wget"],
                        default=True)
+
+        env.addPackage("napari", version="latest", tar="void.tgz",
+                       commands=[(f"{cls.getCondaActivationCmd()} "
+                                  f"conda create -y -n napari -c conda-forge "
+                                  f"python=3.9 napari && touch installed",
+                                  "./installed")],
+                       default=False)
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
