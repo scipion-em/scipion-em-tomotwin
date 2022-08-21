@@ -45,7 +45,11 @@ class Plugin(pwem.Plugin):
     def _defineVariables(cls):
         cls._defineVar(TOMOTWIN_ENV_ACTIVATION, DEFAULT_ACTIVATION_CMD)
         cls._defineVar(NAPARI_ENV_ACTIVATION, "conda activate napari")
-        cls._defineEmVar(TOMOTWIN_MODEL, DEFAULT_MODEL)
+        cls._defineEmVar(TOMOTWIN_MODEL, cls._getTomotwinModel())
+
+    @classmethod
+    def _getTomotwinModel(cls):
+        return os.path.join(f"tomotwin_model-052022", DEFAULT_MODEL)
 
     @classmethod
     def getTomoTwinEnvActivation(cls):
@@ -82,7 +86,7 @@ class Plugin(pwem.Plugin):
                                    default=ver == TOMOTWIN_DEFAULT_VER_NUM)
 
         url = "https://owncloud.gwdg.de/index.php/s/vfjKoBZc4YtPaGT/download"
-        env.addPackage(TOMOTWIN_MODEL, version="052022",
+        env.addPackage("tomotwin_model", version="052022",
                        tar='void.tgz',
                        commands=[(f"wget -O {DEFAULT_MODEL} {url}",
                                   DEFAULT_MODEL)],
@@ -132,10 +136,13 @@ class Plugin(pwem.Plugin):
     @classmethod
     def getProgram(cls, program, gpus='0'):
         """ Create TomoTwin command line. """
-        fullProgram = '%s && CUDA_VISIBLE_DEVICES=%s %s' % (
-            cls.getActivationCmd(), gpus, program)
+        fullProgram = [
+            f"{cls.getCondaActivationCmd()} ",
+            f"{cls.getActivationCmd()} && ",
+            f"CUDA_VISIBLE_DEVICES={gpus} {program}"
+        ]
 
-        return fullProgram
+        return "".join(fullProgram)
 
     @classmethod
     def getActiveVersion(cls, *args):

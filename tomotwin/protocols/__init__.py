@@ -23,3 +23,5 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+
+from .protocol_picking_ref import ProtTomoTwinRefPicking
