@@ -27,7 +27,6 @@
 import os
 
 from pyworkflow import BETA
-from pyworkflow.utils.properties import Message
 from pyworkflow import utils as pwutils
 import pyworkflow.protocol.params as params
 
@@ -55,6 +54,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
     def __int__(self, **kwargs):
         ProtTomoPicking.__init__(self, **kwargs)
+        self.stepsExecutionMode = params.STEPS_SERIAL
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):
@@ -106,11 +106,13 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._insertFunctionStep('convertInputStep')
+        self._insertFunctionStep('embeddingStep')
         self._insertFunctionStep('pickingStep')
         self._insertFunctionStep("createOutputStep")
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
+        """ Copy inputs to tmp. """
         pwutils.makePath(self._getTmpPath("refs"))
 
         for vol in self.inputRefs.get():
@@ -125,27 +127,30 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             pwutils.createAbsLink(os.path.abspath(tomo.getFileName()),
                                   tomoFn)
 
-    def pickingStep(self):
-        # embed refs
+    def embeddingStep(self):
+        """ Embed both references and tomograms.  """
         self.runProgram(self.getProgram("tomotwin_embed.py"),
                         self._getEmbedRefsArgs())
 
         for tomo in self.inputTomos.get():
             tomoId = tomo.getTsId()
-            # embed tomo
             self.runProgram(self.getProgram("tomotwin_embed.py"),
                             self._getEmbedTomoArgs(tomoId))
 
-            # map tomo
-            self.runProgram(self.getProgram("tomotwin_map.py"),
-                            self._getMapArgs())
+    def pickingStep(self):
+        """ Localize potential particles.  """
+        for tomo in self.inputTomos.get():
+            tomoId = tomo.getTsId()
+            # map tomo - uses all CPUs?
+            self.runProgram(self.getProgram("tomotwin_map.py", gpu=False),
+                            self._getMapArgs(tomoId))
 
-            # locate particles
-            self.runProgram(self.getProgram("tomotwin_locate.py"),
+            # locate particles - uses 4 CPUs
+            self.runProgram(self.getProgram("tomotwin_locate.py", gpu=False),
                             self._getLocateArgs())
 
     def createOutputStep(self):
-        pass
+        raise Exception("DEBUG")
 
     # --------------------------- INFO functions ------------------------------
     def _validate(self):
@@ -162,12 +167,10 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         summary = []
         if not self.isFinished():
             summary.append("Output 3D Coordinates not ready yet.")
-
-        if self.getOutputsSize() >= 1:
+        else:
             for key, output in self.iterOutputAttributes():
                 summary.append("*%s:* \n %s " % (key, output.getObjComment()))
-        else:
-            summary.append(Message.TEXT_NO_OUTPUT_CO)
+
         return summary
 
     def _methods(self):
@@ -182,7 +185,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def _getEmbedTomoArgs(self, tomoId):
         args = [
             f"tomogram -m {Plugin.getVar(TOMOTWIN_MODEL)}",
-            f"-v {tomoId + '.mrc'}",
+            f"-v {tomoId}.mrc",
             f"-b {self.batchTomos.get()}",
             f"-o embed/tomos",
             f"-w {self.windowSize.get()}",
@@ -202,10 +205,10 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             f"-o embed/refs"
         ]
 
-    def _getMapArgs(self):
+    def _getMapArgs(self, tomoId):
         return [
-            f"distance -r embed/refs_embeddings.temb",
-            f"-v embed/tomos_embeddings.temb",
+            f"distance -r embed/refs/embeddings.temb",
+            f"-v embed/tomos/{tomoId}_embeddings.temb",
             f"-o ./"
         ]
 
@@ -218,9 +221,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             f"-g {self.globalMin.get()}"
         ]
 
-    def getProgram(self, program):
-        return Plugin.getProgram(program,
-                                 gpus=self.gpuList.get().replace(" ", ","))
+    def getProgram(self, program, gpu=True):
+        if gpu:
+            gpu = self.gpuList.get().replace(" ", ",")
+
+        return Plugin.getProgram(program, gpus=gpu)
 
     def runProgram(self, program, args):
         """ Execute runJob in tmpDir. """
