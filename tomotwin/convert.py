@@ -34,10 +34,8 @@ from tomo.constants import BOTTOM_LEFT_CORNER
 
 def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo, origin=BOTTOM_LEFT_CORNER,
                            scale=1, groupId=None):
-
-    table = Table(filename=coordsFn, tableName="cryolo")
-    for row in table:
-        coord3DSet.enableAppend()
+    coord3DSet.enableAppend()
+    for row in Table.iterRows(fileName="cryolo@"+coordsFn):
         newCoord = readCoordinate3D(row, inputTomo, origin=origin, scale=scale)
         if groupId is not None:
             newCoord.setGroupId(groupId)
@@ -46,15 +44,12 @@ def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo, origin=BOTTOM_LEFT_C
 
 
 def readCoordinate3D(row, inputTomo, origin=BOTTOM_LEFT_CORNER, scale=1):
-    x, y, z = row.CoordinateX, row.CoordinateY, row.CoordinateZ
+    x, y, z = int(row.CoordinateX), int(row.CoordinateY), int(row.CoordinateZ)
     coord = Coordinate3D()
     coord.setVolume(inputTomo)
-    coord.scale(scale)
     coord.setPosition(x, y, z, origin)
-
-    if not hasattr(coord, '_confidence'):
-        coord._confidence = Float()
-
-    coord._confidence.set(row.Confidence)
+    coord.scale(scale)
+    coord._confidence = Float()
+    coord._confidence.set(float(row.Confidence))
 
     return coord

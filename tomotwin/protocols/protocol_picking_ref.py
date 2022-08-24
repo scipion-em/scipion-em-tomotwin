@@ -160,8 +160,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
         for tomo in setOfTomograms.iterItems():
             tomoId = tomo.getTsId()
-            files = glob(f"{self._getExtraPath(tomoId)}/%s.cbox")
-
+            files = glob(f"{self._getExtraPath(tomoId)}/{tomoId}*.cbox")
             if not files:
                 continue
             else:
