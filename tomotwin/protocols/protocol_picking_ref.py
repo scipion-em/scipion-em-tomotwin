@@ -25,6 +25,7 @@
 # **************************************************************************
 
 import os
+from glob import glob
 
 from pyworkflow import BETA
 from pyworkflow import utils as pwutils
@@ -32,9 +33,11 @@ import pyworkflow.protocol.params as params
 
 from tomo.protocols import ProtTomoPicking
 from tomo.objects import SetOfCoordinates3D
+from tomo.constants import BOTTOM_LEFT_CORNER
 
 from .. import Plugin
 from ..constants import TOMOTWIN_MODEL
+from ..convert import readSetOfCoordinates3D
 
 
 class ProtTomoTwinRefPicking(ProtTomoPicking):
@@ -42,15 +45,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
     _label = 'reference-based picking'
     _devStatus = BETA
-    _possibleOutputs = {}
-
-    def _createFilenameTemplates(self):
-        """ Centralize how files are called. """
-
-        myDict = {
-        }
-
-        self._updateFilenamesDict(myDict)
+    _possibleOutputs = {'output3DCoordinates': SetOfCoordinates3D}
 
     def __int__(self, **kwargs):
         ProtTomoPicking.__init__(self, **kwargs)
@@ -113,11 +108,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
         """ Copy inputs to tmp. """
-        pwutils.makePath(self._getTmpPath("refs"))
+        pwutils.makePath(self._getTmpPath("input_refs"))
 
         for vol in self.inputRefs.get():
             refFn = pwutils.removeBaseExt(vol.getFileName()) + '.mrc'
-            refFn = self._getTmpPath(f"refs/{refFn}")
+            refFn = self._getTmpPath(f"input_refs/{refFn}")
 
             pwutils.createAbsLink(os.path.abspath(vol.getFileName()),
                                   refFn)
@@ -147,10 +142,42 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
             # locate particles - uses 4 CPUs
             self.runProgram(self.getProgram("tomotwin_locate.py", gpu=False),
-                            self._getLocateArgs())
+                            self._getLocateArgs(tomoId))
+
+            # output coords
+            self.runProgram(self.getProgram("tomotwin_pick.py", gpu=False),
+                            self._getPickArgs(tomoId))
 
     def createOutputStep(self):
-        raise Exception("DEBUG")
+        setOfTomograms = self.inputTomos.get()
+        suffix = self._getOutputSuffix(SetOfCoordinates3D)
+        coord3DSetDict = {}
+        setOfCoord3D = self._createSetOfCoordinates3D(setOfTomograms, suffix)
+        setOfCoord3D.setName("tomoCoord")
+        setOfCoord3D.setPrecedents(setOfTomograms)
+        setOfCoord3D.setSamplingRate(setOfTomograms.getSamplingRate())
+        setOfCoord3D.setBoxSize(self.boxSize.get())
+
+        for tomo in setOfTomograms.iterItems():
+            tomoId = tomo.getTsId()
+            files = glob(f"{self._getExtraPath(tomoId)}/%s.cbox")
+
+            if not files:
+                continue
+            else:
+                coord3DSetDict[tomo.getObjId()] = setOfCoord3D
+                for index, fn in enumerate(files):
+                    readSetOfCoordinates3D(fn, setOfCoord3D, tomo.clone(),
+                                           origin=BOTTOM_LEFT_CORNER,
+                                           groupId=index+1)
+
+        name = self.OUTPUT_PREFIX + suffix
+        self._defineOutputs(**{name: setOfCoord3D})
+        self._defineSourceRelation(setOfTomograms, setOfCoord3D)
+
+        for tomoObjId, coord3DSet in coord3DSetDict.items():
+            self._updateOutputSet(name, coord3DSet,
+                                  state=coord3DSet.STREAM_CLOSED)
 
     # --------------------------- INFO functions ------------------------------
     def _validate(self):
@@ -200,7 +227,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def _getEmbedRefsArgs(self):
         return [
             f"subvolumes -m {Plugin.getVar(TOMOTWIN_MODEL)}",
-            f"-v refs/*.mrc",
+            f"-v input_refs/*.mrc",
             f"-b {self.batchRefs.get()}",
             f"-o embed/refs"
         ]
@@ -209,16 +236,22 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         return [
             f"distance -r embed/refs/embeddings.temb",
             f"-v embed/tomos/{tomoId}_embeddings.temb",
-            f"-o ./"
+            f"-o ../extra/{tomoId}/"
         ]
 
-    def _getLocateArgs(self):
+    def _getLocateArgs(self, tomoId):
         return [
-            "findmax -m map.tmap",
-            "-o locate/",
+            f"findmax -m ../extra/{tomoId}/map.tmap",
+            f"-o ../extra/{tomoId}/locate",
             f"-t {self.tolerance.get()}",
             f"-b {self.boxSize.get()}",
             f"-g {self.globalMin.get()}"
+        ]
+
+    def _getPickArgs(self, tomoId):
+        return [
+            f"-l ../extra/{tomoId}/locate/located.tloc",
+            f"-o ../extra/{tomoId}/"
         ]
 
     def getProgram(self, program, gpu=True):
