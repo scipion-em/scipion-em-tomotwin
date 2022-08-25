@@ -189,16 +189,6 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         summary.append("Particle size: %s" % coord3DSet.getBoxSize())
         return "\n".join(summary)
 
-    def _summary(self):
-        summary = []
-        if not self.isFinished():
-            summary.append("Output 3D Coordinates not ready yet.")
-        else:
-            for key, output in self.iterOutputAttributes():
-                summary.append("*%s:* \n %s " % (key, output.getObjComment()))
-
-        return summary
-
     def _methods(self):
         tomos = self.inputTomos.get()
         return [
