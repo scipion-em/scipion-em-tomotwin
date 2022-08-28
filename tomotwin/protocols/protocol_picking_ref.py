@@ -60,7 +60,8 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                       pointerClass='SetOfTomograms',
                       label="Input tomograms", important=True,
                       help='Specify tomograms containing reference-like '
-                           'particles to be extracted.')
+                           'particles to be extracted. It is recommended '
+                           'to rescale tomograms to 10 A/px in advance.')
         form.addParam('inputRefs', params.PointerParam,
                       pointerClass="SetOfVolumes",
                       label='Reference volumes', important=True,
@@ -168,7 +169,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                 for index, fn in enumerate(files):
                     readSetOfCoordinates3D(fn, setOfCoord3D, tomo.clone(),
                                            origin=BOTTOM_LEFT_CORNER,
-                                           groupId=index+1)
+                                           groupId=index)
 
         name = self.OUTPUT_PREFIX + suffix
         self._defineOutputs(**{name: setOfCoord3D})
