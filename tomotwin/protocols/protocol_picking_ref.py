@@ -49,7 +49,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
     def __int__(self, **kwargs):
         ProtTomoPicking.__init__(self, **kwargs)
-        self.stepsExecutionMode = params.STEPS_SERIAL
+        self.stepsExecutionMode = params.STEPS_PARALLEL
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):
@@ -68,6 +68,12 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                       help='Specify a set of 3D volumes.')
         form.addParam('boxSize', params.IntParam, default=37,
                       label="Box size (px)")
+        form.addParam('numCpus', params.IntParam, default=4,
+                      label="Number of CPUs",
+                      help="*Important!* This is different from number of threads "
+                           "above as threads are used for GPU parallelization. "
+                           "Provide here the number of CPU cores for tomotwin locate "
+                           "process.")
 
         form.addSection(label="Embedding")
         line = form.addLine("Batch size for embedding")
@@ -99,12 +105,24 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                            "Maximums below value will be ignored. "
                            "Higher values give faster runtime.")
 
+        form.addParallelSection(threads=1, mpi=1)
+
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
-        self._insertFunctionStep('convertInputStep')
-        self._insertFunctionStep('embeddingStep')
-        self._insertFunctionStep('pickingStep')
-        self._insertFunctionStep("createOutputStep")
+        convertStepId = self._insertFunctionStep(self.convertInputStep)
+        deps = []
+        embedRef = self._insertFunctionStep(self.embedRefsStep,
+                                            prerequisites=convertStepId)
+        deps.append(embedRef)
+
+        for tomo in self.inputTomos.get():
+            stepId = self._insertFunctionStep(self.embedTomoStep, tomo.getTsId(),
+                                              prerequisites=convertStepId)
+            deps.append(stepId)
+
+        pickStepId = self._insertFunctionStep(self.pickingStep,
+                                              prerequisites=deps)
+        self._insertFunctionStep(self.createOutputStep, prerequisites=pickStepId)
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
@@ -123,15 +141,15 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             pwutils.createAbsLink(os.path.abspath(tomo.getFileName()),
                                   tomoFn)
 
-    def embeddingStep(self):
-        """ Embed both references and tomograms.  """
+    def embedRefsStep(self):
+        """ Embed the references. """
         self.runProgram(self.getProgram("tomotwin_embed.py"),
                         self._getEmbedRefsArgs())
 
-        for tomo in self.inputTomos.get():
-            tomoId = tomo.getTsId()
-            self.runProgram(self.getProgram("tomotwin_embed.py"),
-                            self._getEmbedTomoArgs(tomoId))
+    def embedTomoStep(self, tomoId):
+        """ Embed each tomo. """
+        self.runProgram(self.getProgram("tomotwin_embed.py"),
+                        self._getEmbedTomoArgs(tomoId))
 
     def pickingStep(self):
         """ Localize potential particles.  """
@@ -236,6 +254,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             f"-t {self.tolerance.get()}",
             f"-b {self.boxSize.get()}",
             f"-g {self.globalMin.get()}"
+            f"--processes {self.numCpus.get()}"
         ]
 
     def _getPickArgs(self, tomoId):
@@ -245,14 +264,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         ]
 
     def getProgram(self, program, gpu=True):
-        if gpu:
-            gpu = self.gpuList.get().replace(" ", ",")
-
-        return Plugin.getProgram(program, gpus=gpu)
+        return Plugin.getProgram(program, gpus=gpu,
+                                 useQueue=self.useQueue())
 
     def runProgram(self, program, args):
         """ Execute runJob in tmpDir. """
         self.runJob(program, " ".join(args),
                     env=Plugin.getEnviron(),
-                    cwd=self._getTmpPath(),
-                    numberOfThreads=1)
+                    cwd=self._getTmpPath())

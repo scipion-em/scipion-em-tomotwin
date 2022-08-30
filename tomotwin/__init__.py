@@ -133,11 +133,11 @@ class Plugin(pwem.Plugin):
         return f'{cls.getCondaActivationCmd()} {cls.getTomoTwinEnvActivation()}'
 
     @classmethod
-    def getProgram(cls, program, gpus=True):
+    def getProgram(cls, program, gpus=True, useQueue=False):
         """ Create TomoTwin command line. """
         fullProgram = f"{cls.getActivationCmd()} && "
-        if gpus:
-            fullProgram += f"CUDA_VISIBLE_DEVICES={gpus} "
+        if gpus and not useQueue:
+            fullProgram += f"CUDA_VISIBLE_DEVICES=%(GPU)s "
 
         return fullProgram + program
 
