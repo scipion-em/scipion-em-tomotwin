@@ -47,7 +47,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     _devStatus = BETA
     _possibleOutputs = {'output3DCoordinates': SetOfCoordinates3D}
 
-    def __int__(self, **kwargs):
+    def __init__(self, **kwargs):
         ProtTomoPicking.__init__(self, **kwargs)
         self.stepsExecutionMode = params.STEPS_PARALLEL
 
