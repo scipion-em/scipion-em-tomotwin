@@ -32,13 +32,13 @@ from tomo.tests import DataSet
 from ..protocols.protocol_picking_ref import ProtTomoTwinRefPicking
 
 
-class TestRefPicking(BaseTest):
+class TestTomoTwinRefPicking(BaseTest):
     @classmethod
     def setUpClass(cls):
         setupTestProject(cls)
         cls.dataset = DataSet.getDataSet("emd_10439")
         cls.tomo = cls.dataset.getFile('tomoEmd10439')
-        cls.subtomos = cls.dataset.getFile('subtomos')
+        cls.subtomos = cls.dataset.getFile('subtomograms/emd_10439-01*.mrc')
 
     def test_run(self):
         protImportTomo = self.newProtocol(ProtImportTomograms,
@@ -57,6 +57,8 @@ class TestRefPicking(BaseTest):
         protPicking = self.newProtocol(ProtTomoTwinRefPicking,
                                        inputTomos=protImportTomo.outputTomograms,
                                        inputRefs=protImportVols.outputVolumes,
+                                       boxSize=44,
+                                       windowSize=44,
                                        batchTomos=256,
                                        batchRefs=12,
                                        zMin=200, zMax=240)
