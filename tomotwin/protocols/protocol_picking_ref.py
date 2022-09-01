@@ -67,7 +67,10 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                       label='Reference volumes', important=True,
                       help='Specify a set of 3D volumes.')
         form.addParam('boxSize', params.IntParam, default=37,
-                      label="Box size (px)")
+                      label="Box size (px)",
+                      help="The box size only influences the non maximum "
+                           "suppression. The ideal box size is a tight box "
+                           "size around the protein.")
         form.addParam('numCpus', params.IntParam, default=4,
                       label="Number of CPUs",
                       help="*Important!* This is different from number of threads "
@@ -75,26 +78,19 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                            "Provide here the number of CPU cores for tomotwin locate "
                            "process.")
 
-        form.addSection(label="Embedding")
+        form.addSection(label="Advanced params")
         line = form.addLine("Batch size for embedding")
         line.addParam('batchTomos', params.IntParam, default=64,
                       label="Tomograms")
         line.addParam('batchRefs', params.IntParam, default=128,
                       label="References")
 
-        group = form.addGroup('Sliding window')
-        group.addParam('windowSize', params.IntParam, default=37,
-                       label="Window size")
-        group.addParam('strideSize', params.IntParam, default=2,
-                       label="Stride of sliding window")
-
-        line = group.addLine("Z-range for sliding")
+        line = form.addLine("Z-range for sliding (px)")
         line.addParam('zMin', params.IntParam, default=0,
                       label="Min")
         line.addParam('zMax', params.IntParam, default=0,
                       label="Max")
 
-        form.addSection(label="Locate particles")
         form.addParam('tolerance', params.FloatParam,
                       default=0.2,
                       label="Tolerance value")
@@ -222,9 +218,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             f"tomogram -m {Plugin.getVar(TOMOTWIN_MODEL)}",
             f"-v {tomoId}.mrc",
             f"-b {self.batchTomos.get()}",
-            f"-o embed/tomos",
-            f"-w {self.windowSize.get()}",
-            f"-s {self.strideSize.get()}"
+            f"-o embed/tomos"
         ]
 
         if self.zMin > 0 and self.zMax > 0:

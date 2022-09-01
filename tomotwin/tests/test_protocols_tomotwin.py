@@ -26,6 +26,7 @@
 
 from pyworkflow.tests import BaseTest, setupTestProject
 from pwem.protocols import ProtImportVolumes
+
 from tomo.protocols import ProtImportTomograms
 from tomo.tests import DataSet
 
@@ -58,7 +59,6 @@ class TestTomoTwinRefPicking(BaseTest):
                                        inputTomos=protImportTomo.outputTomograms,
                                        inputRefs=protImportVols.outputVolumes,
                                        boxSize=44,
-                                       windowSize=44,
                                        batchTomos=256,
                                        batchRefs=12,
                                        zMin=200, zMax=240)
@@ -66,4 +66,4 @@ class TestTomoTwinRefPicking(BaseTest):
         outputCoords = protPicking.output3DCoordinates
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
         self.assertAlmostEqual(outputCoords.getSize(), 1000, delta=1)
-        self.assertEqual(outputCoords.getBoxSize(), 37)
+        self.assertEqual(outputCoords.getBoxSize(), 44)

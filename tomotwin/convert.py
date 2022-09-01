@@ -32,8 +32,8 @@ from tomo.objects import Coordinate3D
 from tomo.constants import BOTTOM_LEFT_CORNER
 
 
-def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo, origin=BOTTOM_LEFT_CORNER,
-                           scale=1, groupId=None):
+def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo,
+                           origin=BOTTOM_LEFT_CORNER, scale=1, groupId=None):
     coord3DSet.enableAppend()
     for row in Table.iterRows(fileName="cryolo@"+coordsFn):
         newCoord = readCoordinate3D(row, inputTomo, origin=origin, scale=scale)

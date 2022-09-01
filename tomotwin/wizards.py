@@ -30,7 +30,7 @@ from .protocols import ProtTomoTwinRefPicking
 
 
 class TomoTwinPickingWizard(EmWizard):
-    _targets = [(ProtTomoTwinRefPicking, ['boxSize', 'windowSize'])]
+    _targets = [(ProtTomoTwinRefPicking, ['boxSize'])]
 
     def show(self, form, *params):
         prot = form.protocol
@@ -42,4 +42,3 @@ class TomoTwinPickingWizard(EmWizard):
 
         size = inputRefs.getXDim()
         form.setVar('boxSize', size)
-        form.setVar('windowSize', size)
