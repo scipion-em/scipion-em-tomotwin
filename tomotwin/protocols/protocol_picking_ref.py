@@ -247,7 +247,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             f"-o ../extra/{tomoId}/locate",
             f"-t {self.tolerance.get()}",
             f"-b {self.boxSize.get()}",
-            f"-g {self.globalMin.get()}"
+            f"-g {self.globalMin.get()}",
             f"--processes {self.numCpus.get()}"
         ]
 
