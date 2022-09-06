@@ -65,5 +65,5 @@ class TestTomoTwinRefPicking(BaseTest):
         self.launchProtocol(protPicking)
         outputCoords = protPicking.output3DCoordinates
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
-        self.assertAlmostEqual(outputCoords.getSize(), 6396, delta=1)
+        self.assertAlmostEqual(outputCoords.getSize(), 6407, delta=30)
         self.assertEqual(outputCoords.getBoxSize(), 44)
