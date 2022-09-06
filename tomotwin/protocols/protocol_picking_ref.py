@@ -122,15 +122,21 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
-        """ Copy inputs to tmp. """
+        """ Copy inputs to tmp and rescale references. """
         pwutils.makePath(self._getTmpPath("input_refs"))
+        scale = self.inputTomos.get().getSamplingRate() / self.inputRefs.get().getSamplingRate()
+        doScale = abs(scale - 1.0 > 0.00001)
 
         for vol in self.inputRefs.get():
             refFn = pwutils.removeBaseExt(vol.getFileName()) + '.mrc'
             refFn = self._getTmpPath(f"input_refs/{refFn}")
 
-            pwutils.createAbsLink(os.path.abspath(vol.getFileName()),
-                                  refFn)
+            if doScale:
+                params = f' -i {os.path.abspath(vol.getFileName())}'
+                params += f' -o {refFn} --factor {scale}'
+                self.runJob("xmipp_image_resize", params)
+            else:
+                pwutils.createAbsLink(os.path.abspath(vol.getFileName()), refFn)
 
         for tomo in self.inputTomos.get():
             tomoFn = self._getTmpPath(tomo.getTsId() + ".mrc")
@@ -175,7 +181,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
         for tomo in setOfTomograms.iterItems():
             tomoId = tomo.getTsId()
-            files = glob(f"{self._getExtraPath(tomoId)}/{tomoId}*.cbox")
+            files = glob(f"{self._getExtraPath(tomoId)}/*.cbox")
             if not files:
                 continue
             else:
