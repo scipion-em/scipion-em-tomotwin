@@ -157,11 +157,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         """ Localize potential particles.  """
         for tomo in self.inputTomos.get():
             tomoId = tomo.getTsId()
-            # map tomo - uses all CPUs?
+            # map tomo
             self.runProgram(self.getProgram("tomotwin_map.py", gpu=False),
                             self._getMapArgs(tomoId))
 
-            # locate particles - uses 4 CPUs
+            # locate particles
             self.runProgram(self.getProgram("tomotwin_locate.py", gpu=False),
                             self._getLocateArgs(tomoId))
 

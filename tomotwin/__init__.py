@@ -95,8 +95,9 @@ class Plugin(pwem.Plugin):
 
         env.addPackage("napari", version="latest", tar="void.tgz",
                        commands=[(f"{cls.getCondaActivationCmd()} "
-                                  f"conda create -y -n napari -c conda-forge "
-                                  f"python=3.9 && pip install 'napari[all]>=0.4.16.rc8' "
+                                  "conda create -y -n napari -c conda-forge "
+                                  "python=3.10 && conda activate napari && "
+                                  "pip install 'napari[all]>=0.4.16.rc8' "
                                   "napari-boxmanager && touch installed",
                                   "./installed")],
                        default=False)
