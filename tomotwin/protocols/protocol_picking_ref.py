@@ -30,6 +30,7 @@ from glob import glob
 from pyworkflow import BETA
 from pyworkflow import utils as pwutils
 import pyworkflow.protocol.params as params
+from pwem import emlib
 
 from tomo.protocols import ProtTomoPicking
 from tomo.objects import SetOfCoordinates3D
@@ -61,21 +62,24 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                       label="Input tomograms", important=True,
                       help='Specify tomograms containing reference-like '
                            'particles to be extracted. It is recommended '
-                           'to rescale tomograms to 10 A/px in advance.')
+                           'to rescale tomograms to 10 A/px in advance. '
+                           'Tomograms should be without denoising or '
+                           'lowpass filtering.')
         form.addParam('inputRefs', params.PointerParam,
                       pointerClass="SetOfVolumes",
                       label='Reference volumes', important=True,
-                      help='Specify a set of 3D volumes.')
+                      help='Specify a set of 3D volumes. They will be '
+                           'rescaled to match the tomograms pixel size.')
         form.addParam('boxSize', params.IntParam, default=37,
                       label="Box size (px)",
-                      help="The box size only influences the non maximum "
+                      help="The box size only influences the non-maximum "
                            "suppression. The ideal box size is a tight box "
                            "size around the protein.")
         form.addParam('numCpus', params.IntParam, default=4,
                       label="Number of CPUs",
                       help="*Important!* This is different from number of threads "
                            "above as threads are used for GPU parallelization. "
-                           "Provide here the number of CPU cores for tomotwin locate "
+                           "Provide here the number of *CPU cores* for tomotwin locate "
                            "process.")
 
         form.addSection(label="Advanced params")
@@ -98,8 +102,8 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                       default=0.5,
                       label="Global minimum",
                       help="Global minimum of the find max procedure. "
-                           "Maximums below value will be ignored. "
-                           "Higher values give faster runtime.")
+                           "Maximums below this value will be ignored. "
+                           "Higher values will give faster runtime.")
 
         form.addParallelSection(threads=1, mpi=1)
 
@@ -138,10 +142,14 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             else:
                 pwutils.createAbsLink(os.path.abspath(vol.getFileName()), refFn)
 
+        ih = emlib.image.ImageHandler()
         for tomo in self.inputTomos.get():
+            inputFn = tomo.getFileName()
             tomoFn = self._getTmpPath(tomo.getTsId() + ".mrc")
-            pwutils.createAbsLink(os.path.abspath(tomo.getFileName()),
-                                  tomoFn)
+            if pwutils.getExt(inputFn) == '.mrc':
+                pwutils.createAbsLink(os.path.abspath(inputFn), tomoFn)
+            else:
+                ih.convert(inputFn, tomoFn, emlib.DT_FLOAT)
 
     def embedRefsStep(self):
         """ Embed the references. """
