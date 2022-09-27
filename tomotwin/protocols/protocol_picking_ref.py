@@ -30,7 +30,7 @@ from glob import glob
 from pyworkflow import BETA
 from pyworkflow import utils as pwutils
 import pyworkflow.protocol.params as params
-from pwem import emlib
+from pwem import emlib, Domain
 
 from tomo.protocols import ProtTomoPicking
 from tomo.objects import SetOfCoordinates3D
@@ -51,6 +51,12 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def __init__(self, **kwargs):
         ProtTomoPicking.__init__(self, **kwargs)
         self.stepsExecutionMode = params.STEPS_PARALLEL
+
+    def _createFilenameTemplates(self):
+        """ Centralize how files are called. """
+        self._updateFilenamesDict({
+            'output_tloc': self._getExtraPath("%(tomoId)s/locate/located.tloc")
+        })
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):
@@ -109,6 +115,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
+        self._createFilenameTemplates()
         convertStepId = self._insertFunctionStep(self.convertInputStep)
         deps = []
         embedRef = self._insertFunctionStep(self.embedRefsStep,
@@ -130,17 +137,16 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         pwutils.makePath(self._getTmpPath("input_refs"))
         scale = self.inputRefs.get().getSamplingRate() / self.inputTomos.get().getSamplingRate()
         doScale = abs(scale - 1.0) > 0.00001
+        xmippPlugin = Domain.importFromPlugin('xmipp3', 'Plugin', doRaise=True)
 
         for vol in self.inputRefs.get():
             refFn = pwutils.removeBaseExt(vol.getFileName()) + '.mrc'
             refFn = self._getTmpPath(f"input_refs/{refFn}")
 
             if doScale:
-                self.info(f"Rescaling input references by a factor of {scale}")
-                import xmipp3
                 params = f' -i {os.path.abspath(vol.getFileName())}'
                 params += f' -o {refFn} --factor {scale}'
-                self.runJob("xmipp_image_resize", params, env=xmipp3.Plugin.getEnviron())
+                self.runJob("xmipp_image_resize", params, env=xmippPlugin.getEnviron())
             else:
                 pwutils.createAbsLink(os.path.abspath(vol.getFileName()), refFn)
 
@@ -179,7 +185,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             self.runProgram(self.getProgram("tomotwin_pick.py", gpu=False),
                             self._getPickArgs(tomoId))
 
-    def createOutputStep(self):
+    def createOutputStep(self, fromViewer=False):
         setOfTomograms = self.inputTomos.get()
         suffix = self._getOutputSuffix(SetOfCoordinates3D)
         coord3DSetDict = {}
@@ -191,7 +197,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
         for tomo in setOfTomograms.iterItems():
             tomoId = tomo.getTsId()
-            files = glob(f"{self._getExtraPath(tomoId)}/*.cbox")
+            files = glob(f"{self.getOutputDir(fromViewer)}/{tomoId}/*.cbox")
             if not files:
                 continue
             else:
@@ -215,7 +221,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         return errors
 
     def getSummary(self, coord3DSet):
-        summary = []
+        summary = list()
         summary.append("Number of particles picked: %s" % coord3DSet.getSize())
         summary.append("Particle size: %s" % coord3DSet.getBoxSize())
         return "\n".join(summary)
@@ -282,3 +288,10 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         self.runJob(program, " ".join(args),
                     env=Plugin.getEnviron(),
                     cwd=self._getTmpPath())
+
+    def getOutputDir(self, fromViewer=False):
+        """ Results from the viewer will be in the project Tmp folder. """
+        if fromViewer:
+            return self.getProject().getTmpPath()
+        else:
+            return self._getExtraPath()

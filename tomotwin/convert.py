@@ -26,7 +26,6 @@
 
 from emtable import Table
 
-
 from pyworkflow.object import Float
 from tomo.objects import Coordinate3D
 from tomo.constants import BOTTOM_LEFT_CORNER
@@ -35,21 +34,21 @@ from tomo.constants import BOTTOM_LEFT_CORNER
 def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo,
                            origin=BOTTOM_LEFT_CORNER, scale=1, groupId=None):
     coord3DSet.enableAppend()
-    for row in Table.iterRows(fileName="cryolo@"+coordsFn):
-        newCoord = readCoordinate3D(row, inputTomo, origin=origin, scale=scale)
-        if groupId is not None:
-            newCoord.setGroupId(groupId)
-
-        coord3DSet.append(newCoord)
-
-
-def readCoordinate3D(row, inputTomo, origin=BOTTOM_LEFT_CORNER, scale=1):
-    x, y, z = int(row.CoordinateX), int(row.CoordinateY), int(row.CoordinateZ)
     coord = Coordinate3D()
+    coord._confidence = Float()
+    for row in Table.iterRows(fileName="cryolo@"+coordsFn):
+        readCoordinate3D(coord, row, inputTomo, origin=origin,
+                         scale=scale, groupId=groupId)
+        coord3DSet.append(coord)
+
+
+def readCoordinate3D(coord, row, inputTomo, origin=BOTTOM_LEFT_CORNER,
+                     scale=1, groupId=None):
+    x, y, z = row.CoordinateX, row.CoordinateY, row.CoordinateZ
+    coord.setObjId(None)
     coord.setVolume(inputTomo)
     coord.setPosition(x, y, z, origin)
     coord.scale(scale)
-    coord._confidence = Float()
-    coord._confidence.set(float(row.Confidence))
-
-    return coord
+    coord._confidence.set(row.Confidence)
+    if groupId is not None:
+        coord.setGroupId(groupId)

@@ -112,7 +112,8 @@ class Plugin(pwem.Plugin):
             cls.getCondaActivationCmd(),
             f"conda create -y -n {ENV_NAME} -c pytorch -c rapidsai -c nvidia",
             f"-c conda-forge python=3.9 pytorch==1.12 torchvision pandas scipy",
-            f"numpy matplotlib pytables cuML=22.06 cudatoolkit=11.6 'protobuf>3.20' tensorboard &&",
+            f"numpy matplotlib pytables cuML=22.06 cudatoolkit=11.6 'protobuf>3.20'",
+            f"tensorboard optuna mysql-connector-python &&",
             f"conda activate tomotwin-{version} &&",
             f"pip install -e . && conda remove -y --force cupy",
         ]
