@@ -128,17 +128,19 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def convertInputStep(self):
         """ Copy inputs to tmp and rescale references. """
         pwutils.makePath(self._getTmpPath("input_refs"))
-        scale = self.inputTomos.get().getSamplingRate() / self.inputRefs.get().getSamplingRate()
-        doScale = abs(scale - 1.0 > 0.00001)
+        scale = self.inputRefs.get().getSamplingRate() / self.inputTomos.get().getSamplingRate()
+        doScale = abs(scale - 1.0) > 0.00001
 
         for vol in self.inputRefs.get():
             refFn = pwutils.removeBaseExt(vol.getFileName()) + '.mrc'
             refFn = self._getTmpPath(f"input_refs/{refFn}")
 
             if doScale:
+                self.info(f"Rescaling input references by a factor of {scale}")
+                import xmipp3
                 params = f' -i {os.path.abspath(vol.getFileName())}'
                 params += f' -o {refFn} --factor {scale}'
-                self.runJob("xmipp_image_resize", params)
+                self.runJob("xmipp_image_resize", params, env=xmipp3.Plugin.getEnviron())
             else:
                 pwutils.createAbsLink(os.path.abspath(vol.getFileName()), refFn)
 
