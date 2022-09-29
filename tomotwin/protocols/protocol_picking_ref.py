@@ -62,7 +62,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def _defineParams(self, form):
         form.addSection(label='Input')
         form.addHidden(params.GPU_LIST, params.StringParam,
-                       default='0', label="Choose GPU IDs")
+                       default='0', help="Choose GPU IDs")
         form.addParam('inputTomos', params.PointerParam,
                       pointerClass='SetOfTomograms',
                       label="Input tomograms", important=True,

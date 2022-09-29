@@ -30,6 +30,8 @@ import threading
 
 import pyworkflow.viewer as pwviewer
 from pyworkflow.gui.browser import FileBrowserWindow
+from pyworkflow.gui.dialog import askYesNo
+from pyworkflow.utils.properties import Message
 import pyworkflow.utils as pwutils
 from pwem.protocols import EMProtocol
 from pwem.viewers.views import ObjectView
@@ -77,21 +79,24 @@ class NapariBoxManager(pwviewer.Viewer):
         tomoProvider = Tomo3DTreeProvider(tomoList)
         ViewerNapariDialog(self._tkRoot, provider=tomoProvider, protocol=self.protocol)
 
-        def _onSelect(fileInfo):
-            """ Convert and save updated coordinates. """
-            if fileInfo is None:
-                return
-            proc = threading.Thread(target=self._createTmpOutput,
-                                    args=(fileInfo, tomoList))
-            proc.start()
+        import tkinter as tk
+        frame = tk.Frame()
+        if askYesNo(Message.TITLE_SAVE_OUTPUT, Message.LABEL_SAVE_OUTPUT, frame):
+            def _onSelect(fileInfo):
+                """ Convert and save updated coordinates. """
+                if fileInfo is None:
+                    return
+                proc = threading.Thread(target=self._createTmpOutput,
+                                        args=(fileInfo, tomoList))
+                proc.start()
 
-        browser = FileBrowserWindow("Select a folder with saved *.tloc files from Napari",
-                                    master=self.formWindow,
-                                    path=self.protocol.getPath(),
-                                    onSelect=_onSelect,
-                                    selectionType=2,  # FOLDERS
-                                    onlyFolders=True)
-        browser.show()
+            browser = FileBrowserWindow("Select a folder with saved *.tloc files from Napari",
+                                        master=self.formWindow,
+                                        path=self.protocol.getPath(),
+                                        onSelect=_onSelect,
+                                        selectionType=2,  # FOLDERS
+                                        onlyFolders=True)
+            browser.show()
         return []
 
     def _createTmpOutput(self, fileInfo, tomoList):

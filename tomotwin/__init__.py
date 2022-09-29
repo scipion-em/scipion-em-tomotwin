@@ -38,6 +38,7 @@ _logo = "tomotwin_logo.png"
 
 
 class Plugin(pwem.Plugin):
+    _pathVars = [TOMOTWIN_MODEL]
     _url = "https://github.com/scipion-em/scipion-em-tomotwin"
     _supportedVersions = VERSIONS
 
