@@ -107,7 +107,7 @@ class Plugin(pwem.Plugin):
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
         installCmds = [
-            f"cd .. && rmdir tomotwin-{version} &&",
+            f"cd .. && rm -rf tomotwin-{version} &&",
             f"git clone -b dev https://github.com/MPI-Dortmund/tomotwin-cryoet.git tomotwin-{version} &&",
             f"cd tomotwin-{version} && git rev-parse --short HEAD > VERSION.txt && ",
             cls.getCondaActivationCmd(),
