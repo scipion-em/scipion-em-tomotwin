@@ -101,7 +101,7 @@ class Plugin(pwem.Plugin):
                                   "pip install 'napari[all]>=0.4.16.rc8' "
                                   "napari-boxmanager && touch installed",
                                   "./installed")],
-                       default=False)
+                       default=True)
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
