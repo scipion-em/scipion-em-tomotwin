@@ -71,7 +71,7 @@ Verifying
 ---------
 To check the installation, simply run the following Scipion test:
 
-``scipion test tomotwin.tests.test_protocols_tomotwin.TestTomoTwin``
+``scipion test tomotwin.tests.test_protocols_tomotwin.TestTomoTwinRefPicking``
 
 Supported versions
 ------------------

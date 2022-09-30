@@ -116,7 +116,7 @@ class Plugin(pwem.Plugin):
             f"numpy matplotlib pytables cuML=22.06 cudatoolkit=11.6 'protobuf>3.20'",
             f"tensorboard optuna mysql-connector-python &&",
             f"conda activate tomotwin-{version} &&",
-            f"pip install -e . && conda remove -y --force cupy",
+            f"pip install -e .",
         ]
 
         tomotwinCmds = [(" ".join(installCmds), "VERSION.txt")]
