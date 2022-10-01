@@ -38,8 +38,8 @@ from pwem.viewers.views import ObjectView
 
 import tomo.objects
 
-from tomotwin.protocols import ProtTomoTwinRefPicking
-from tomotwin import Plugin
+from ..protocols import ProtTomoTwinRefPicking
+from .. import Plugin
 from .views_tkinter_tree import Tomo3DTreeProvider, ViewerNapariDialog
 
 
@@ -47,8 +47,8 @@ class NapariBoxManager(pwviewer.Viewer):
     """ Wrapper to visualize tomo coordinates using napari. """
     _environments = [pwviewer.DESKTOP_TKINTER]
     _targets = [
-        tomo.objects.SetOfCoordinates3D,
-        #ProtTomoTwinRefPicking
+        #tomo.objects.SetOfCoordinates3D,
+        ProtTomoTwinRefPicking
     ]
 
     def __init__(self, **kwargs):
@@ -60,14 +60,9 @@ class NapariBoxManager(pwviewer.Viewer):
             self._project, obj.strId(), fn, viewParams=viewParams)
 
     def _visualize(self, obj, **kwargs):
-        cls = type(obj)
-        if issubclass(cls, tomo.objects.SetOfCoordinates3D):
-            outputCoords = obj
-        elif issubclass(cls, EMProtocol):
-            outputCoords = obj.output3DCoordinates.get()
-
+        outputCoords = obj.output3DCoordinates
         tomos = outputCoords.getPrecedents()
-        volIds = outputCoords.aggregate(["MAX", "COUNT"], "_volId", ["_volId"])
+        volIds = outputCoords.aggregate(["COUNT"], "_volId", ["_volId"])
         volIds = [(d['_volId'], d["COUNT"]) for d in volIds]
 
         tomoList = []
@@ -77,7 +72,8 @@ class NapariBoxManager(pwviewer.Viewer):
             tomoList.append(tomogram)
 
         tomoProvider = Tomo3DTreeProvider(tomoList)
-        ViewerNapariDialog(self._tkRoot, provider=tomoProvider, protocol=self.protocol)
+        ViewerNapariDialog(self._tkRoot, provider=tomoProvider,
+                           protocol=self.protocol)
 
         import tkinter as tk
         frame = tk.Frame()
