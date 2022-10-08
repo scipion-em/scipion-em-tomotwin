@@ -29,7 +29,7 @@ def getTomoTwinEnvName(version):
     return "tomotwin-%s" % version
 
 
-VERSIONS = ['0.1.0']
+VERSIONS = ['0.1.2']
 TOMOTWIN_DEFAULT_VER_NUM = VERSIONS[-1]
 
 DEFAULT_ENV_NAME = getTomoTwinEnvName(TOMOTWIN_DEFAULT_VER_NUM)

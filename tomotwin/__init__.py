@@ -32,14 +32,14 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.0b1'
+__version__ = '3.0b3'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
 
 class Plugin(pwem.Plugin):
     _pathVars = [TOMOTWIN_MODEL]
-    _url = "https://github.com/scipion-em/scipion-em-tomotwin"
+    _url = "https://tomotwin-cryoet.readthedocs.io/en/latest/index.html"
     _supportedVersions = VERSIONS
 
     @classmethod
@@ -86,7 +86,7 @@ class Plugin(pwem.Plugin):
             cls.addTomoTwinPackage(env, ver,
                                    default=ver == TOMOTWIN_DEFAULT_VER_NUM)
 
-        url = "https://owncloud.gwdg.de/index.php/s/vfjKoBZc4YtPaGT/download"
+        url = "https://owncloud.gwdg.de/index.php/s/PmothfUVKh4NSfD/download"
         env.addPackage("tomotwin_model", version="052022",
                        tar='void.tgz',
                        commands=[(f"wget -O {DEFAULT_MODEL} {url}",
@@ -101,25 +101,24 @@ class Plugin(pwem.Plugin):
                                   "pip install 'napari[all]>=0.4.16.rc8' "
                                   "napari-boxmanager && touch installed",
                                   "./installed")],
-                       default=False)
+                       default=True)
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
-            f"git clone -b dev https://github.com/MPI-Dortmund/tomotwin-cryoet.git tomotwin-{version} &&",
-            f"cd tomotwin-{version} && git rev-parse --short HEAD > VERSION.txt && ",
-            cls.getCondaActivationCmd(),
+            f"git clone -b v{version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
+            f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
             f"conda create -y -n {ENV_NAME} -c pytorch -c rapidsai -c nvidia",
             f"-c conda-forge python=3.9 pytorch==1.12 torchvision pandas scipy",
             f"numpy matplotlib pytables cuML=22.06 cudatoolkit=11.6 'protobuf>3.20'",
             f"tensorboard optuna mysql-connector-python &&",
-            f"conda activate tomotwin-{version} &&",
+            f"conda activate {ENV_NAME} &&",
             f"pip install -e .",
         ]
 
-        tomotwinCmds = [(" ".join(installCmds), "VERSION.txt")]
+        tomotwinCmds = [(" ".join(installCmds), "setup.py")]
 
         envPath = os.environ.get('PATH', "")
         # keep path since conda likely in there
