@@ -108,7 +108,7 @@ class Plugin(pwem.Plugin):
         ENV_NAME = getTomoTwinEnvName(version)
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
-            f"git clone -b {version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
+            f"git clone -b v{version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
             f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
             f"conda create -y -n {ENV_NAME} -c pytorch -c rapidsai -c nvidia",
             f"-c conda-forge python=3.9 pytorch==1.12 torchvision pandas scipy",
