@@ -25,6 +25,7 @@
 # **************************************************************************
 
 from pyworkflow.tests import BaseTest, setupTestProject
+from pyworkflow.utils import magentaStr
 from pwem.protocols import ProtImportVolumes
 
 from tomo.protocols import ProtImportTomograms
@@ -42,28 +43,30 @@ class TestTomoTwinRefPicking(BaseTest):
         cls.subtomos = cls.dataset.getFile('subtomograms/emd_10439-01*.mrc')
 
     def test_run(self):
+        print(magentaStr("\n==> Importing data - tomograms:"))
         protImportTomo = self.newProtocol(ProtImportTomograms,
                                           filesPath=self.tomo,
-                                          samplingRate=13.68)
+                                          samplingRate=10)
         self.launchProtocol(protImportTomo)
         self.assertIsNotNone(protImportTomo.outputTomograms,
                              msg="There was a problem with tomogram import")
 
+        print(magentaStr("\n==> Importing data - volumes:"))
         protImportVols = self.newProtocol(ProtImportVolumes,
-                                          filesPath=self.subtomos, samplingRate=13.68)
+                                          filesPath=self.subtomos, samplingRate=10)
         self.launchProtocol(protImportVols)
         self.assertIsNotNone(protImportVols.outputVolumes,
                              "There was a problem with volumes import")
 
+        print(magentaStr("\n==> Testing tomotwin - reference-based picking:"))
         protPicking = self.newProtocol(ProtTomoTwinRefPicking,
                                        inputTomos=protImportTomo.outputTomograms,
                                        inputRefs=protImportVols.outputVolumes,
-                                       boxSize=37,
                                        batchTomos=128,
                                        batchRefs=12,
                                        zMin=200, zMax=210)
         self.launchProtocol(protPicking)
         outputCoords = protPicking.output3DCoordinates
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
-        self.assertAlmostEqual(outputCoords.getSize(), 3192, delta=30)
+        self.assertAlmostEqual(outputCoords.getSize(), 3164, delta=100)
         self.assertEqual(outputCoords.getBoxSize(), 37)
