@@ -32,7 +32,7 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.0b3'
+__version__ = '3.0b4'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
@@ -86,7 +86,7 @@ class Plugin(pwem.Plugin):
             cls.addTomoTwinPackage(env, ver,
                                    default=ver == TOMOTWIN_DEFAULT_VER_NUM)
 
-        url = "https://owncloud.gwdg.de/index.php/s/PmothfUVKh4NSfD/download"
+        url = "https://ftp.gwdg.de/pub/misc/sphire/TomoTwin/models/tomotwin_model_p120_052022_loss.pth"
         env.addPackage("tomotwin_model", version="052022",
                        tar='void.tgz',
                        commands=[(f"wget -O {DEFAULT_MODEL} {url}",
@@ -98,7 +98,7 @@ class Plugin(pwem.Plugin):
                        commands=[(f"{cls.getCondaActivationCmd()} "
                                   "conda create -y -n napari -c conda-forge "
                                   "python=3.10 && conda activate napari && "
-                                  "pip install 'napari[all]>=0.4.16.rc8' "
+                                  "pip install 'napari[all]==0.4.17' "
                                   "napari-boxmanager && touch installed",
                                   "./installed")],
                        default=True)
