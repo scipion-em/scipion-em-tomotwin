@@ -39,7 +39,7 @@ _logo = "tomotwin_logo.png"
 
 class Plugin(pwem.Plugin):
     _pathVars = [TOMOTWIN_MODEL]
-    _url = "https://tomotwin-cryoet.readthedocs.io/en/latest/index.html"
+    _url = "https://tomotwin-cryoet.readthedocs.io/"
     _supportedVersions = VERSIONS
 
     @classmethod
