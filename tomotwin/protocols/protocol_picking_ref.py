@@ -219,9 +219,6 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def _validate(self):
         errors = []
 
-        if self.inputTomos.get().getSamplingRate() - 10.0 > 0.1:
-            errors.append("Input tomograms must be at 10 A/px")
-
         return errors
 
     def _warnings(self):
@@ -229,6 +226,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
         if self.boxSize != 37:
             warnings.append("It's strongly recommended to use 37 px box!")
+
+        if self.inputTomos.get().getSamplingRate() - 10.0 > 0.1:
+            warnings.append("Input tomograms must be at 10 A/px")
+
+        return warnings
 
     def getSummary(self, coord3DSet):
         summary = list()
