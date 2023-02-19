@@ -197,7 +197,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
         for tomo in setOfTomograms.iterItems():
             tomoId = tomo.getTsId()
-            files = glob(f"{self.getOutputDir(fromViewer)}/{tomoId}/*.cbox")
+            files = glob(f"{self.getOutputDir(fromViewer)}/{tomoId}/*_relion3.star")
             if not files:
                 continue
             else:

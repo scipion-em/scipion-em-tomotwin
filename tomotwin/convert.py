@@ -36,7 +36,7 @@ def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo,
     coord3DSet.enableAppend()
     coord = Coordinate3D()
     coord._confidence = Float()
-    for row in Table.iterRows(fileName="cryolo@"+coordsFn):
+    for row in Table.iterRows(fileName=coordsFn):
         readCoordinate3D(coord, row, inputTomo, origin=origin,
                          scale=scale, groupId=groupId)
         coord3DSet.append(coord)
@@ -44,11 +44,10 @@ def readSetOfCoordinates3D(coordsFn, coord3DSet, inputTomo,
 
 def readCoordinate3D(coord, row, inputTomo, origin=BOTTOM_LEFT_CORNER,
                      scale=1, groupId=None):
-    x, y, z = row.CoordinateX, row.CoordinateY, row.CoordinateZ
+    x, y, z = row.rlnCoordinateX, row.rlnCoordinateY, row.rlnCoordinateZ
     coord.setObjId(None)
     coord.setVolume(inputTomo)
     coord.setPosition(x, y, z, origin)
     coord.scale(scale)
-    coord._confidence.set(row.Confidence)
     if groupId is not None:
         coord.setGroupId(groupId)

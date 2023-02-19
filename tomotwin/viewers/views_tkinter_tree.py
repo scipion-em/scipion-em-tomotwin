@@ -100,6 +100,6 @@ class ViewerNapariDialog(ToolbarListDialog):
             proc.start()
 
     def launchNapari(self, tomoFn, tlocFn):
-        program = f"{Plugin.getCondaActivationCmd()} conda activate napari && napari"
-        args = f"{tomoFn} {tlocFn} -w napari-boxmanager"
+        program = f"{Plugin.getCondaActivationCmd()} conda activate napari && napari_boxmanager"
+        args = f"{tomoFn} {tlocFn}"
         pwutils.runJob(None, program, args, env=Plugin.getEnviron())
