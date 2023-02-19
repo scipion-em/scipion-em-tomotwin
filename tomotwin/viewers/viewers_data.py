@@ -33,10 +33,7 @@ from pyworkflow.gui.browser import FileBrowserWindow
 from pyworkflow.gui.dialog import askYesNo
 from pyworkflow.utils.properties import Message
 import pyworkflow.utils as pwutils
-from pwem.protocols import EMProtocol
 from pwem.viewers.views import ObjectView
-
-import tomo.objects
 
 from ..protocols import ProtTomoTwinRefPicking
 from .. import Plugin

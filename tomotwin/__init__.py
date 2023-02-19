@@ -32,14 +32,14 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.0b4'
+__version__ = '3.0'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
 
 class Plugin(pwem.Plugin):
     _pathVars = [TOMOTWIN_MODEL]
-    _url = "https://tomotwin-cryoet.readthedocs.io/en/latest/index.html"
+    _url = "https://tomotwin-cryoet.readthedocs.io/"
     _supportedVersions = VERSIONS
 
     @classmethod
@@ -98,8 +98,8 @@ class Plugin(pwem.Plugin):
                        commands=[(f"{cls.getCondaActivationCmd()} "
                                   "conda create -y -n napari -c conda-forge "
                                   "python=3.10 && conda activate napari && "
-                                  "pip install 'napari[all]==0.4.17' "
-                                  "napari-boxmanager && touch installed",
+                                  "pip install 'napari==0.4.17' "
+                                  "napari-boxmanager==0.3.0b13 pyqt5 && touch installed",
                                   "./installed")],
                        default=True)
 
