@@ -31,6 +31,7 @@ from pyworkflow import BETA
 from pyworkflow import utils as pwutils
 import pyworkflow.protocol.params as params
 from pwem import emlib, Domain
+from pwem.objects import Volume
 
 from tomo.protocols import ProtTomoPicking
 from tomo.objects import SetOfCoordinates3D
@@ -139,7 +140,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         doScale = abs(scale - 1.0) > 0.00001
         xmippPlugin = Domain.importFromPlugin('xmipp3', 'Plugin', doRaise=True)
 
-        for vol in self.inputRefs.get():
+        refs = self.inputRefs.get()
+        if isinstance(refs, Volume):
+            refs = [refs]
+
+        for vol in refs:
             refFn = pwutils.removeBaseExt(vol.getFileName()) + '.mrc'
             refFn = self._getTmpPath(f"input_refs/{refFn}")
 
