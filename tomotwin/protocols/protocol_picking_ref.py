@@ -72,7 +72,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                            'Tomograms should be without denoising or '
                            'lowpass filtering.')
         form.addParam('inputRefs', params.PointerParam,
-                      pointerClass="SetOfVolumes",
+                      pointerClass="SetOfVolumes, Volume",
                       label='Reference volumes', important=True,
                       help='Specify a set of 3D volumes. They will be '
                            'rescaled to match the tomograms pixel size.')
