@@ -94,14 +94,30 @@ class Plugin(pwem.Plugin):
                        neededProgs=["wget"],
                        default=True)
 
-        env.addPackage("napari", version="latest", tar="void.tgz",
-                       commands=[(f"{cls.getCondaActivationCmd()} "
-                                  "conda create -y -n napari -c conda-forge "
-                                  "python=3.10 && conda activate napari && "
-                                  "pip install 'napari==0.4.17' "
-                                  "napari-boxmanager==0.3.0b13 pyqt5 && touch installed",
-                                  "./installed")],
-                       default=True)
+        if not env.hasPackage('napari'):
+            version = "0.3.11"
+            ENV_NAME = f"napari-{version}"
+            NAPARI_INSTALLED = f"napari_{version}_installed"
+            installCmd = [cls.getCondaActivationCmd(),
+                          f'conda create -y -n {ENV_NAME} -c conda-forge',
+                          'python=3.10 napari=0.4.17 pyqt pip &&',
+                          f'conda activate {ENV_NAME} &&',
+                          f'pip install napari_boxmanager=={version}']
+
+            # Flag installation finished
+            installCmd.append(f'&& touch {NAPARI_INSTALLED}')
+
+            napari_commands = [(" ".join(installCmd), NAPARI_INSTALLED)]
+
+            envPath = os.environ.get('PATH', "")
+            # keep path since conda likely in there
+            installEnvVars = {'PATH': envPath} if envPath else None
+            env.addPackage(f'napari', version=version,
+                           tar='void.tgz',
+                           commands=napari_commands,
+                           neededProgs=cls.getDependencies(),
+                           default=True,
+                           vars=installEnvVars)
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
