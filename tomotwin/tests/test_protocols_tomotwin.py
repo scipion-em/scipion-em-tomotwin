@@ -48,7 +48,7 @@ class TestTomoTwinRefPicking(BaseTest):
                                           filesPath=self.tomo,
                                           samplingRate=10)
         self.launchProtocol(protImportTomo)
-        self.assertIsNotNone(protImportTomo.outputTomograms,
+        self.assertIsNotNone(protImportTomo.Tomograms,
                              msg="There was a problem with tomogram import")
 
         print(magentaStr("\n==> Importing data - volumes:"))
@@ -60,7 +60,7 @@ class TestTomoTwinRefPicking(BaseTest):
 
         print(magentaStr("\n==> Testing tomotwin - reference-based picking:"))
         protPicking = self.newProtocol(ProtTomoTwinRefPicking,
-                                       inputTomos=protImportTomo.outputTomograms,
+                                       inputTomos=protImportTomo.Tomograms,
                                        inputRefs=protImportVols.outputVolumes,
                                        batchTomos=128,
                                        batchRefs=12,
