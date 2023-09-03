@@ -1,3 +1,8 @@
+3.1:
+    - update version
+    - add input masks option
+    - new protocol added: create tomo masks
+    - refactor napari viewer
 3.0.1:
     - update napari installer, fix tomo import output name
     - adding volume as reference
