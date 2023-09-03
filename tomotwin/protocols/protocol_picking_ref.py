@@ -135,25 +135,26 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         self._createFilenameTemplates()
         convertStepId = self._insertFunctionStep(self.convertInputStep)
         deps = []
-        embedRef = self._insertFunctionStep(self.embedRefsStep,
-                                            prerequisites=convertStepId)
-        deps.append(embedRef)
+        embedRefStepId = self._insertFunctionStep(self.embedRefsStep,
+                                                  prerequisites=convertStepId)
+        deps.append(embedRefStepId)
 
         tomoIds = self.inputTomos.get().aggregate(["COUNT"], "_tsId", ["_tsId"])
         tomoIds = set([d['_tsId'] for d in tomoIds])
 
         for tomoId in tomoIds:
-            stepId = self._insertFunctionStep(self.embedTomoStep, tomoId,
-                                              prerequisites=convertStepId)
-            deps.append(stepId)
+            embedTomoStepId = self._insertFunctionStep(self.embedTomoStep,
+                                                       tomoId,
+                                                       prerequisites=convertStepId)
+            deps.append(embedTomoStepId)
+            self._insertFunctionStep(self.pickingStep, tomoId,
+                                     prerequisites=deps)
 
-        pickStepId = self._insertFunctionStep(self.pickingStep, tomoIds,
-                                              prerequisites=deps)
-        self._insertFunctionStep(self.createOutputStep, prerequisites=pickStepId)
+        self._insertFunctionStep(self.createOutputStep)
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
-        """ Copy inputs to tmp and rescale references. """
+        """ Copy or link inputs to tmp. """
         pwutils.makePath(self._getTmpPath("input_refs"))
         pwutils.makePath(self._getTmpPath("input_masks"))
         refs = self.inputRefs.get()
@@ -181,7 +182,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
             if self._hasMasks():
                 for mask in self.inputMasks.get():
-                    if mask.getVolName() == inputFn:
+                    if os.path.basename(mask.getVolName()) == os.path.basename(inputFn):
                         maskFn = self._getTmpPath(f"input_masks/{tomo.getTsId()}_mask.mrc")
                         _convert(mask.getFileName(), maskFn)
                         break
@@ -196,20 +197,19 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         self.runProgram(self.getProgram("tomotwin_embed.py"),
                         self._getEmbedTomoArgs(tomoId))
 
-    def pickingStep(self, tomoIds):
+    def pickingStep(self, tomoId):
         """ Localize potential particles.  """
-        for tomoId in tomoIds:
-            # map tomo
-            self.runProgram(self.getProgram("tomotwin_map.py", gpu=False),
-                            self._getMapArgs(tomoId))
+        # map tomo
+        self.runProgram(self.getProgram("tomotwin_map.py", gpu=False),
+                        self._getMapArgs(tomoId))
 
-            # locate particles
-            self.runProgram(self.getProgram("tomotwin_locate.py", gpu=False),
-                            self._getLocateArgs(tomoId))
+        # locate particles
+        self.runProgram(self.getProgram("tomotwin_locate.py", gpu=False),
+                        self._getLocateArgs(tomoId))
 
-            # output coords
-            self.runProgram(self.getProgram("tomotwin_pick.py", gpu=False),
-                            self._getPickArgs(tomoId))
+        # output coords
+        self.runProgram(self.getProgram("tomotwin_pick.py", gpu=False),
+                        self._getPickArgs(tomoId))
 
     def createOutputStep(self, fromViewer=False):
         setOfTomograms = self.inputTomos.get()
