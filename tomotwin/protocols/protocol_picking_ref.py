@@ -181,7 +181,7 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
             if self._hasMasks():
                 for mask in self.inputMasks.get():
-                    if mask.getVolName() == inputFn:
+                    if os.path.basename(mask.getVolName()) == os.path.basename(inputFn):
                         maskFn = self._getTmpPath(f"input_masks/{tomo.getTsId()}_mask.mrc")
                         _convert(mask.getFileName(), maskFn)
                         break
