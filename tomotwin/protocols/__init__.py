@@ -25,3 +25,5 @@
 # **************************************************************************
 
 from .protocol_picking_ref import ProtTomoTwinRefPicking
+#from .protocol_picking_cluster import ProtTomoTwinClusterPicking
+from .protocol_create_masks import ProtTomoTwinCreateMasks

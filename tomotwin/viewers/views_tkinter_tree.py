@@ -29,61 +29,28 @@ import os.path
 import threading
 
 from pyworkflow.gui.dialog import ToolbarListDialog, showError
-from pyworkflow.gui.tree import TreeProvider
-import pyworkflow.utils as pwutils
-
-from tomotwin import Plugin
+from tomo.viewers.views_tkinter_tree import TomogramsTreeProvider
 
 
-class Tomo3DTreeProvider(TreeProvider):
-    """ Populate Tree from SetOfTomograms. """
-
-    def __init__(self, tomoList):
-        TreeProvider.__init__(self)
-        self.tomoList = tomoList
-
-    def getColumns(self):
-        return [('Tomogram id', 300), ("# coords", 100)]
-
+class TomoTreeProvider(TomogramsTreeProvider):
     def getObjectInfo(self, tomo):
         tomogramName = tomo.getTsId()
 
         return {'key': tomogramName, 'parent': None,
                 'text': tomogramName,
-                'values': (tomo.count),
+                'values': (tomo.count, 'Done'),
                 'tags': ("done")}
-
-    def getObjectPreview(self, obj):
-        return (None, None)
-
-    def getObjectActions(self, obj):
-        return []
-
-    def _getObjectList(self):
-        """Retrieve the object list"""
-        return self.tomoList
-
-    def getObjects(self):
-        objList = self._getObjectList()
-        return objList
-
-    def configureTags(self, tree):
-        tree.tag_configure("done", foreground="black")
 
 
 class ViewerNapariDialog(ToolbarListDialog):
-    """
-    This class extends ListDialog to allow calling
-    a Napari viewer subprocess from a list of Tomograms.
-    """
-
-    def __init__(self, parent, **kwargs):
-        self.provider = kwargs.get("provider", None)
-        self.prot = kwargs.get("protocol", None)
+    def __init__(self, parent, provider, protocol, **kwargs):
+        self.provider = provider
+        self.prot = protocol
 
         msg = """Double click on a tomo to launch Napari viewer.
-              If you change the coordinates, click File -> Save selected Layer(s) and save a new {tomo_id}.tloc file for each tomo in the same folder."""
+              If you change the coordinates, click File -> Save selected Layer(s) and save {tomo_id}.tloc file for every tomo in the same folder."""
         ToolbarListDialog.__init__(self, parent, "Tomogram List",
+                                   self.provider, allowsEmptySelection=False,
                                    itemDoubleClick=self.doubleClickOnTomogram,
                                    cancelButton=True, message=msg,
                                    allowSelect=False, **kwargs)
@@ -100,6 +67,6 @@ class ViewerNapariDialog(ToolbarListDialog):
             proc.start()
 
     def launchNapari(self, tomoFn, tlocFn):
-        program = f"{Plugin.getCondaActivationCmd()} conda activate napari && napari_boxmanager"
+        from tomotwin import Plugin, NAPARI_BOXMANAGER
         args = f"{tomoFn} {tlocFn}"
-        pwutils.runJob(None, program, args, env=Plugin.getEnviron())
+        Plugin.runNapariBoxManager(None, NAPARI_BOXMANAGER, args)

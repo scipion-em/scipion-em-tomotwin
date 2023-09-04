@@ -30,7 +30,7 @@ from glob import glob
 from pyworkflow import BETA
 from pyworkflow import utils as pwutils
 import pyworkflow.protocol.params as params
-from pwem import emlib, Domain
+from pwem import emlib
 from pwem.objects import Volume
 
 from tomo.protocols import ProtTomoPicking
@@ -75,8 +75,17 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         form.addParam('inputRefs', params.PointerParam,
                       pointerClass="SetOfVolumes, Volume",
                       label='Reference volumes', important=True,
-                      help='Specify a set of 3D volumes. They will be '
-                           'rescaled to match the tomograms pixel size.')
+                      help='Specify a set of 3D volumes. They *must have '
+                           'the same pixel size as tomograms and 37 px dimensions*.')
+
+        if Plugin.versionGE("0.5.1"):
+            form.addParam('inputMasks', params.PointerParam,
+                          pointerClass='SetOfTomoMasks',
+                          label='Input masks', allowsNull=True,
+                          help='With TomoTwin >=0.5, the embedding command supports the '
+                               'use of masks. With masks you can define which regions '
+                               'of your tomogram get actually embedded and therefore '
+                               'speedup the embedding.')
         form.addParam('numCpus', params.IntParam, default=4,
                       label="Number of CPUs",
                       help="*Important!* This is different from number of threads "
@@ -85,7 +94,14 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                            "process.")
 
         form.addSection(label="Advanced params")
-        line = form.addLine("Batch size for embedding")
+        line = form.addLine("Batch size for embedding",
+                            help="To have your tomograms embedded as quick "
+                                 "as possible, you should choose a batch size that "
+                                 "utilize your GPU memory as much as possible. "
+                                 "However, if you choose it too big, you might "
+                                 "run into memory problems. In those cases play "
+                                 "around with different batch sizes and check "
+                                 "the memory usage with nvidia-smi.")
         line.addParam('batchTomos', params.IntParam, default=256,
                       label="Tomograms")
         line.addParam('batchRefs', params.IntParam, default=12,
@@ -123,12 +139,15 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
                                             prerequisites=convertStepId)
         deps.append(embedRef)
 
-        for tomo in self.inputTomos.get():
-            stepId = self._insertFunctionStep(self.embedTomoStep, tomo.getTsId(),
+        tomoIds = self.inputTomos.get().aggregate(["COUNT"], "_tsId", ["_tsId"])
+        tomoIds = set([d['_tsId'] for d in tomoIds])
+
+        for tomoId in tomoIds:
+            stepId = self._insertFunctionStep(self.embedTomoStep, tomoId,
                                               prerequisites=convertStepId)
             deps.append(stepId)
 
-        pickStepId = self._insertFunctionStep(self.pickingStep,
+        pickStepId = self._insertFunctionStep(self.pickingStep, tomoIds,
                                               prerequisites=deps)
         self._insertFunctionStep(self.createOutputStep, prerequisites=pickStepId)
 
@@ -136,33 +155,36 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def convertInputStep(self):
         """ Copy inputs to tmp and rescale references. """
         pwutils.makePath(self._getTmpPath("input_refs"))
-        scale = self.inputRefs.get().getSamplingRate() / self.inputTomos.get().getSamplingRate()
-        doScale = abs(scale - 1.0) > 0.00001
-        xmippPlugin = Domain.importFromPlugin('xmipp3', 'Plugin', doRaise=True)
-
+        pwutils.makePath(self._getTmpPath("input_masks"))
         refs = self.inputRefs.get()
         if isinstance(refs, Volume):
             refs = [refs]
 
-        for vol in refs:
-            refFn = pwutils.removeBaseExt(vol.getFileName()) + '.mrc'
-            refFn = self._getTmpPath(f"input_refs/{refFn}")
-
-            if doScale:
-                params = f' -i {os.path.abspath(vol.getFileName())}'
-                params += f' -o {refFn} --factor {scale}'
-                self.runJob("xmipp_image_resize", params, env=xmippPlugin.getEnviron())
-            else:
-                pwutils.createAbsLink(os.path.abspath(vol.getFileName()), refFn)
-
         ih = emlib.image.ImageHandler()
+
+        def _convert(inputFn, outputFn):
+            if pwutils.getExt(inputFn) == '.mrc':
+                pwutils.createAbsLink(os.path.abspath(inputFn), outputFn)
+            else:
+                ih.convert(inputFn, outputFn, emlib.DT_FLOAT)
+
+        for vol in refs:
+            inputFn = vol.getFileName()
+            refFn = pwutils.removeBaseExt(inputFn) + '.mrc'
+            refFn = self._getTmpPath(f"input_refs/{refFn}")
+            _convert(inputFn, refFn)
+
         for tomo in self.inputTomos.get():
             inputFn = tomo.getFileName()
             tomoFn = self._getTmpPath(tomo.getTsId() + ".mrc")
-            if pwutils.getExt(inputFn) == '.mrc':
-                pwutils.createAbsLink(os.path.abspath(inputFn), tomoFn)
-            else:
-                ih.convert(inputFn, tomoFn, emlib.DT_FLOAT)
+            _convert(inputFn, tomoFn)
+
+            if self._hasMasks():
+                for mask in self.inputMasks.get():
+                    if os.path.basename(mask.getVolName()) == os.path.basename(inputFn):
+                        maskFn = self._getTmpPath(f"input_masks/{tomo.getTsId()}_mask.mrc")
+                        _convert(mask.getFileName(), maskFn)
+                        break
 
     def embedRefsStep(self):
         """ Embed the references. """
@@ -174,10 +196,9 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
         self.runProgram(self.getProgram("tomotwin_embed.py"),
                         self._getEmbedTomoArgs(tomoId))
 
-    def pickingStep(self):
+    def pickingStep(self, tomoIds):
         """ Localize potential particles.  """
-        for tomo in self.inputTomos.get():
-            tomoId = tomo.getTsId()
+        for tomoId in tomoIds:
             # map tomo
             self.runProgram(self.getProgram("tomotwin_map.py", gpu=False),
                             self._getMapArgs(tomoId))
@@ -224,16 +245,41 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
     def _validate(self):
         errors = []
 
+        refs = self.inputRefs.get()
+        scale = refs.getSamplingRate() / self.inputTomos.get().getSamplingRate()
+        doScale = abs(scale - 1.0) > 0.001
+        if doScale:
+            errors.append("Tomograms and references must have the same pixel size!")
+
         return errors
 
     def _warnings(self):
         warnings = []
 
-        if self.boxSize != 37:
-            warnings.append("It's strongly recommended to use 37 px box!")
+        refs = self.inputRefs.get()
+        if refs.getXDim() != 37:
+            warnings.append("Because TomoTwin was trained on many proteins at "
+                            "once, we needed to find a box size that worked "
+                            "for all proteins. Therefore, all proteins were "
+                            "used with a pixel size of 10Å and a box size of "
+                            "37 pixels. Because of this, you must extract your "
+                            "reference with a box size of 37 pixels. If your "
+                            "protein is too large for this box at 10Å/pix (much "
+                            "larger than a ribosome) then you should scale the "
+                            "pixel size of your tomogram until it fits rather "
+                            "than changing the box size. Likewise if your "
+                            "protein is so small that at 10Å/pix it only fills "
+                            "one to two pixels of the box, you should scale "
+                            "your tomogram pixel size until the particle is "
+                            "bigger, however we’ve found that for proteins down "
+                            "to 100 kDa, 10Å/pix is sufficient for the 37 box.")
 
-        if self.inputTomos.get().getSamplingRate() - 10.0 > 0.1:
-            warnings.append("Input tomograms must be at 10 A/px")
+        if self.inputTomos.get().getSamplingRate() - 10.0 > 0.5:
+            warnings.append("TomoTwin was trained on tomograms with a "
+                            "pixel size of 10A. While in practice we've used "
+                            "it with pixel sizes ranging from 9.2A to 25.0A, "
+                            "it is probably ideal to run it at a pixel size "
+                            "close to 10A.")
 
         return warnings
 
@@ -262,6 +308,11 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
 
         if self.zMin > 0 and self.zMax > 0:
             args.append(f"-z {self.zMin} {self.zMax}")
+
+        if self._hasMasks():
+            maskFn = f"input_masks/{tomoId}_mask.mrc"
+            if os.path.exists(self._getTmpPath(maskFn)):
+                args.append(f"--mask {maskFn}")
 
         return args
 
@@ -312,3 +363,6 @@ class ProtTomoTwinRefPicking(ProtTomoPicking):
             return self.getProject().getTmpPath()
         else:
             return self._getExtraPath()
+
+    def _hasMasks(self):
+        return Plugin.versionGE("0.5.1") and self.inputMasks.hasValue()
