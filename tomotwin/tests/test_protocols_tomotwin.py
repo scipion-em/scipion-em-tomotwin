@@ -31,10 +31,10 @@ from pwem.protocols import ProtImportVolumes
 from tomo.protocols import ProtImportTomograms
 from tomo.tests import DataSet
 
-from ..protocols.protocol_picking_ref import ProtTomoTwinRefPicking
+from ..protocols import ProtTomoTwinRefPicking, ProtTomoTwinCreateMasks
 
 
-class TestTomoTwinRefPicking(BaseTest):
+class TestTomoTwinPicking(BaseTest):
     @classmethod
     def setUpClass(cls):
         setupTestProject(cls)
@@ -58,10 +58,18 @@ class TestTomoTwinRefPicking(BaseTest):
         self.assertIsNotNone(protImportVols.outputVolumes,
                              "There was a problem with volumes import")
 
+        print(magentaStr("\n==> Testing tomotwin - create tomo masks:"))
+        protCreateMasks = self.newProtocol(ProtTomoTwinCreateMasks,
+                                           inputTomos=protImportTomo.Tomograms)
+        self.launchProtocol(protCreateMasks)
+        self.assertIsNotNone(protCreateMasks.outputMasks,
+                             "Tomo mask creation has failed")
+
         print(magentaStr("\n==> Testing tomotwin - reference-based picking:"))
         protPicking = self.newProtocol(ProtTomoTwinRefPicking,
                                        inputTomos=protImportTomo.Tomograms,
                                        inputRefs=protImportVols.outputVolumes,
+                                       inputMasks=protCreateMasks.outputMasks,
                                        batchTomos=128,
                                        batchRefs=12,
                                        boxSize=44,
@@ -69,5 +77,5 @@ class TestTomoTwinRefPicking(BaseTest):
         self.launchProtocol(protPicking)
         outputCoords = protPicking.output3DCoordinates
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
-        self.assertAlmostEqual(outputCoords.getSize(), 2210, delta=100)
+        self.assertAlmostEqual(outputCoords.getSize(), 2250, delta=100)
         self.assertEqual(outputCoords.getBoxSize(), 44)

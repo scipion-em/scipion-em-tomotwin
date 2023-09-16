@@ -68,7 +68,7 @@ Command to activate the TomoTwin environment.
 Path to the pre-trained model.
 
 *NAPARI_ENV_ACTIVATION* (default = conda activate napari-0.4.4):
-Command to activate the Napari viewer (boxmanager) environment.
+Command to activate the Napari viewer environment.
 
 Verifying
 ---------

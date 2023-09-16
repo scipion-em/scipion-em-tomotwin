@@ -23,10 +23,12 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
-
+import os.path
 from emtable import Table
 
 from pyworkflow.object import Float
+import pyworkflow.utils as pwutils
+import pwem.emlib as emlib
 from tomo.objects import Coordinate3D
 from tomo.constants import BOTTOM_LEFT_CORNER
 
@@ -51,3 +53,11 @@ def readCoordinate3D(coord, row, inputTomo, origin=BOTTOM_LEFT_CORNER,
     coord.scale(scale)
     if groupId is not None:
         coord.setGroupId(groupId)
+
+
+def convertToMrc(inputFn, outputFn):
+    ih = emlib.image.ImageHandler()
+    if pwutils.getExt(inputFn) == '.mrc':
+        pwutils.createAbsLink(os.path.abspath(inputFn), outputFn)
+    else:
+        ih.convert(inputFn, outputFn, emlib.DT_FLOAT)

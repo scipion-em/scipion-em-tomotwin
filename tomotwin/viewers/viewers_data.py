@@ -35,14 +35,14 @@ from pyworkflow.utils.properties import Message
 import pyworkflow.utils as pwutils
 from pwem.viewers.views import ObjectView
 
-from ..protocols import ProtTomoTwinRefPicking
+from ..protocols import ProtTomoTwinRefPicking, ProtTomoTwinClusterPicking
 from .views_tkinter_tree import TomoTreeProvider, ViewerNapariDialog
 
 
 class NapariBoxManager(pwviewer.Viewer):
     """ Wrapper to visualize tomo coordinates using napari. """
     _environments = [pwviewer.DESKTOP_TKINTER]
-    _targets = [ProtTomoTwinRefPicking]
+    _targets = [ProtTomoTwinRefPicking, ProtTomoTwinClusterPicking]
 
     def __init__(self, **kwargs):
         pwviewer.Viewer.__init__(self, **kwargs)
@@ -69,7 +69,7 @@ class NapariBoxManager(pwviewer.Viewer):
 
         import tkinter as tk
         frame = tk.Frame()
-        if askYesNo(Message.TITLE_SAVE_OUTPUT, Message.LABEL_SAVE_OUTPUT, frame):
+        if askYesNo(Message.TITLE_SAVE_OUTPUT, "Save modified output?", frame):
             def _onSelect(fileInfo):
                 """ Convert and save updated coordinates. """
                 if fileInfo is None:
