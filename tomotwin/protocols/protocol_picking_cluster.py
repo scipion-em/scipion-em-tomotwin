@@ -72,14 +72,17 @@ class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
                                        self._getExtraPath(tomoId))
             args = f"{tomoPath} {maskFn}"
 
-            text = "Next open the napari-tomotwin clustering tool "
-            "via Plugins -> napari-tomotwin -> Cluster UMAP embeddings. "
-            "Then choose the Path to UMAP by clicking on Select file "
-            "and provide the path to your_tomo_embeddings.tumap. "
-            "Click Load and after a second, a 2D plot of the umap embeddings "
-            "should appear in the plugin window.\n\n"
-            "Continue by following https://tomotwin-cryoet.readthedocs.io/en/latest/tutorials/tutorials_overview.html#find-target-clusters\n\n"
-            "In the end, save cluster targets in the cluster_targets.temb file inside extra/tomoId folder."
+            text = [
+                "Next open the napari-tomotwin clustering tool ",
+                "via Plugins -> napari-tomotwin -> Cluster UMAP embeddings. ",
+                "Then choose the Path to UMAP by clicking on Select file ",
+                "and provide the path to your_tomo_embeddings.tumap. ",
+                "Click Load and after a second, a 2D plot of the umap embeddings ",
+                "should appear in the plugin window. ",
+                "Continue by following https://tomotwin-cryoet.readthedocs.io/en/latest/tutorials/tutorials_overview.html#find-target-clusters ",
+                "In the end, save cluster targets in the cluster_targets.temb file inside extra/tomoId folder."
+            ]
+            text = "".join(text)
             self.info(yellowStr(text))
 
             Plugin.runNapariBoxManager(self._getExtraPath(tomoId),
