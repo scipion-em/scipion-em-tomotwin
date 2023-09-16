@@ -48,7 +48,7 @@ class ViewerNapariDialog(ToolbarListDialog):
         self.prot = protocol
 
         msg = """Double click on a tomo to launch Napari viewer.
-              If you change the coordinates, click File -> Save selected Layer(s) and save {tomo_id}.tloc file for every tomo in the same folder."""
+              If you change the coordinates, click File -> Save selected Layer(s) and save {tomoId}.tloc file for every tomo in the same folder."""
         ToolbarListDialog.__init__(self, parent, "Tomogram List",
                                    self.provider, allowsEmptySelection=False,
                                    itemDoubleClick=self.doubleClickOnTomogram,

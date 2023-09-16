@@ -27,14 +27,13 @@
 import os
 
 from pyworkflow import BETA
-from pyworkflow import utils as pwutils
 import pyworkflow.protocol.params as params
-from pwem import emlib
 from pwem.protocols import ProtCreateMask3D
 
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from .. import Plugin
+from ..convert import convertToMrc
 
 
 class ProtTomoTwinCreateMasks(ProtCreateMask3D):
@@ -79,18 +78,10 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
         """ Convert or link input files to mrc format. """
-        ih = emlib.image.ImageHandler()
-
-        def _convert(inputFn, outputFn):
-            if pwutils.getExt(inputFn) == '.mrc':
-                pwutils.createAbsLink(os.path.abspath(inputFn), outputFn)
-            else:
-                ih.convert(inputFn, outputFn, emlib.DT_FLOAT)
-
         for tomo in self.inputTomos.get():
             inputFn = tomo.getFileName()
             tomoFn = self._getTmpPath(tomo.getTsId() + ".mrc")
-            _convert(inputFn, tomoFn)
+            convertToMrc(inputFn, tomoFn)
 
     def createMaskStep(self, tomoId):
         """ Create mask for each tomo. """

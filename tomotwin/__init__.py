@@ -45,7 +45,6 @@ class Plugin(pwem.Plugin):
     @classmethod
     def _defineVariables(cls):
         cls._defineVar(TOMOTWIN_ENV_ACTIVATION, DEFAULT_ACTIVATION_CMD)
-        cls._defineVar(NAPARI_ENV_ACTIVATION, NAPARI_ACTIVATION_CMD)
         cls._defineEmVar(TOMOTWIN_MODEL, cls._getTomotwinModel())
 
     @classmethod
@@ -94,34 +93,6 @@ class Plugin(pwem.Plugin):
                        neededProgs=["wget"],
                        default=True)
 
-        cls.addNapariPackage(env, V0_3_11)
-        cls.addNapariPackage(env, V0_4_4, default=True)
-
-    @classmethod
-    def addNapariPackage(cls, env, version, default=False):
-        ENV_NAME = f"napari-{version}"
-        NAPARI_INSTALLED = f"napari_{version}_installed"
-        installCmd = [cls.getCondaActivationCmd(),
-                      f'conda create -y -n {ENV_NAME} -c conda-forge',
-                      'python=3.10 napari=0.4.17 pyqt pip &&',
-                      f'conda activate {ENV_NAME} &&',
-                      f'pip install napari-tomotwin napari-boxmanager=={version}']
-
-        # Flag installation finished
-        installCmd.append(f'&& touch {NAPARI_INSTALLED}')
-
-        napari_commands = [(" ".join(installCmd), NAPARI_INSTALLED)]
-
-        envPath = os.environ.get('PATH', "")
-        # keep path since conda likely in there
-        installEnvVars = {'PATH': envPath} if envPath else None
-        env.addPackage(f'napari', version=version,
-                       tar='void.tgz',
-                       commands=napari_commands,
-                       neededProgs=cls.getDependencies(),
-                       default=default,
-                       vars=installEnvVars)
-
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
@@ -166,9 +137,11 @@ class Plugin(pwem.Plugin):
     @classmethod
     def runNapariBoxManager(cls, tmpDir, program, args):
         """ Run Napari boxmanager from a given protocol. """
+        tomoPlugin = pwem.Domain.importFromPlugin('tomo', 'Plugin', doRaise=True)
+        tomoPlugin._defineVariables()
+        napariVar = tomoPlugin.getVar(NAPARI_ENV_ACTIVATION)
         fullProgram = '%s %s && %s' % (cls.getCondaActivationCmd(),
-                                       cls.getVar(NAPARI_ENV_ACTIVATION),
-                                       program)
+                                       napariVar, program)
         pwutils.runJob(None, fullProgram, args, env=cls.getEnviron(),
                        cwd=tmpDir, numberOfMpi=1)
 
