@@ -32,7 +32,7 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.0.1'
+__version__ = '3.1'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
@@ -45,7 +45,6 @@ class Plugin(pwem.Plugin):
     @classmethod
     def _defineVariables(cls):
         cls._defineVar(TOMOTWIN_ENV_ACTIVATION, DEFAULT_ACTIVATION_CMD)
-        cls._defineVar(NAPARI_ENV_ACTIVATION, "conda activate napari")
         cls._defineEmVar(TOMOTWIN_MODEL, cls._getTomotwinModel())
 
     @classmethod
@@ -94,31 +93,6 @@ class Plugin(pwem.Plugin):
                        neededProgs=["wget"],
                        default=True)
 
-        if not env.hasPackage('napari'):
-            version = "0.3.11"
-            ENV_NAME = f"napari-{version}"
-            NAPARI_INSTALLED = f"napari_{version}_installed"
-            installCmd = [cls.getCondaActivationCmd(),
-                          f'conda create -y -n {ENV_NAME} -c conda-forge',
-                          'python=3.10 napari=0.4.17 pyqt pip &&',
-                          f'conda activate {ENV_NAME} &&',
-                          f'pip install napari_boxmanager=={version}']
-
-            # Flag installation finished
-            installCmd.append(f'&& touch {NAPARI_INSTALLED}')
-
-            napari_commands = [(" ".join(installCmd), NAPARI_INSTALLED)]
-
-            envPath = os.environ.get('PATH', "")
-            # keep path since conda likely in there
-            installEnvVars = {'PATH': envPath} if envPath else None
-            env.addPackage(f'napari', version=version,
-                           tar='void.tgz',
-                           commands=napari_commands,
-                           neededProgs=cls.getDependencies(),
-                           default=True,
-                           vars=installEnvVars)
-
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
@@ -126,9 +100,9 @@ class Plugin(pwem.Plugin):
             f"cd .. && rmdir tomotwin-{version} &&",
             f"git clone -b v{version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
             f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
-            f"conda create -y -n {ENV_NAME} -c pytorch -c rapidsai -c nvidia",
-            f"-c conda-forge python=3.9 pytorch==1.12 torchvision pandas scipy",
-            f"numpy matplotlib pytables cuML=22.06 cudatoolkit=11.6 'protobuf>3.20'",
+            f"conda create -y -n {ENV_NAME} -c conda-forge -c pytorch -c rapidsai -c nvidia",
+            f"'pytorch<2' torchvision 'pandas<2' scipy numpy matplotlib",
+            f"pytables cuML=23.04 cudatoolkit=11.8 'protobuf>3.20'",
             f"tensorboard optuna mysql-connector-python &&",
             f"conda activate {ENV_NAME} &&",
             f"pip install -e .",
@@ -159,6 +133,17 @@ class Plugin(pwem.Plugin):
             fullProgram += f"CUDA_VISIBLE_DEVICES=%(GPU)s "
 
         return fullProgram + program
+
+    @classmethod
+    def runNapariBoxManager(cls, tmpDir, program, args):
+        """ Run Napari boxmanager from a given protocol. """
+        tomoPlugin = pwem.Domain.importFromPlugin('tomo', 'Plugin', doRaise=True)
+        tomoPlugin._defineVariables()
+        napariVar = tomoPlugin.getVar(NAPARI_ENV_ACTIVATION)
+        fullProgram = '%s %s && %s' % (cls.getCondaActivationCmd(),
+                                       napariVar, program)
+        pwutils.runJob(None, fullProgram, args, env=cls.getEnviron(),
+                       cwd=tmpDir, numberOfMpi=1)
 
     @classmethod
     def getActiveVersion(cls, *args):

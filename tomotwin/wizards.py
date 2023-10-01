@@ -29,7 +29,7 @@ from pwem.wizards.wizard import EmWizard
 from .protocols import ProtTomoTwinRefPicking
 
 
-class TomoTwinPickingWizard(EmWizard):
+class TomoTwinBoxSizeWizard(EmWizard):
     _targets = [(ProtTomoTwinRefPicking, ['boxSize'])]
 
     def show(self, form, *params):

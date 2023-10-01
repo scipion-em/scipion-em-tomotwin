@@ -35,18 +35,14 @@ from pyworkflow.utils.properties import Message
 import pyworkflow.utils as pwutils
 from pwem.viewers.views import ObjectView
 
-from ..protocols import ProtTomoTwinRefPicking
-from .. import Plugin
-from .views_tkinter_tree import Tomo3DTreeProvider, ViewerNapariDialog
+from ..protocols import ProtTomoTwinRefPicking, ProtTomoTwinClusterPicking
+from .views_tkinter_tree import TomoTreeProvider, ViewerNapariDialog
 
 
 class NapariBoxManager(pwviewer.Viewer):
     """ Wrapper to visualize tomo coordinates using napari. """
     _environments = [pwviewer.DESKTOP_TKINTER]
-    _targets = [
-        #tomo.objects.SetOfCoordinates3D,
-        ProtTomoTwinRefPicking
-    ]
+    _targets = [ProtTomoTwinRefPicking, ProtTomoTwinClusterPicking]
 
     def __init__(self, **kwargs):
         pwviewer.Viewer.__init__(self, **kwargs)
@@ -68,13 +64,12 @@ class NapariBoxManager(pwviewer.Viewer):
             tomogram.count = objId[1]
             tomoList.append(tomogram)
 
-        tomoProvider = Tomo3DTreeProvider(tomoList)
-        ViewerNapariDialog(self._tkRoot, provider=tomoProvider,
-                           protocol=self.protocol)
+        tomoProvider = TomoTreeProvider(tomoList, path=None, mode=None)
+        ViewerNapariDialog(self._tkRoot, tomoProvider, self.protocol)
 
         import tkinter as tk
         frame = tk.Frame()
-        if askYesNo(Message.TITLE_SAVE_OUTPUT, Message.LABEL_SAVE_OUTPUT, frame):
+        if askYesNo(Message.TITLE_SAVE_OUTPUT, "Save modified output?", frame):
             def _onSelect(fileInfo):
                 """ Convert and save updated coordinates. """
                 if fileInfo is None:
@@ -83,24 +78,27 @@ class NapariBoxManager(pwviewer.Viewer):
                                         args=(fileInfo, tomoList))
                 proc.start()
 
-            browser = FileBrowserWindow("Select a folder with saved *.tloc files from Napari",
+            browser = FileBrowserWindow("Select a FOLDER with saved *.tloc files from Napari",
                                         master=self.formWindow,
                                         path=self.protocol.getPath(),
                                         onSelect=_onSelect,
                                         selectionType=2,  # FOLDERS
-                                        onlyFolders=True)
+                                        onlyFolders=False)
             browser.show()
         return []
 
     def _createTmpOutput(self, fileInfo, tomoList):
+        from tomotwin import Plugin
         tlocPath = fileInfo.getPath()
         flag = False
         for tomo in tomoList:
             tomoId = tomo.getTsId()
             tlocFn = os.path.join(tlocPath, f"{tomoId}.tloc")
             if os.path.exists(tlocFn):
-                pwutils.makePath(f"Tmp/{tomoId}")
-                program = f"{Plugin.getActivationCmd()} && tomotwin_pick.py"
+                tmpDir = self._getTmpPath(tomoId)
+                pwutils.cleanPath(tmpDir)
+                pwutils.makePath(tmpDir)
+                program = Plugin.getProgram("tomotwin_pick.py", gpus=False)
                 args = f"-l {os.path.abspath(tlocFn)} -o Tmp/{tomoId}"
                 pwutils.runJob(None, program, args, env=Plugin.getEnviron())
                 flag = True
