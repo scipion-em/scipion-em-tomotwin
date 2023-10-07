@@ -24,6 +24,7 @@
 # *
 # **************************************************************************
 
-from .protocol_picking_ref import ProtTomoTwinRefPicking
+from .protocol_picking_cluster_umap import ProtTomoTwinClusterCreateUmaps
 from .protocol_picking_cluster import ProtTomoTwinClusterPicking
+from .protocol_picking_ref import ProtTomoTwinRefPicking
 from .protocol_create_masks import ProtTomoTwinCreateMasks
