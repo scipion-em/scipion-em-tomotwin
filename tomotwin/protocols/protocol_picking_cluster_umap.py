@@ -24,8 +24,6 @@
 # *
 # **************************************************************************
 
-import os
-
 from pyworkflow import BETA
 import pyworkflow.protocol.params as params
 from .protocol_base import ProtTomoTwinBase
@@ -75,7 +73,6 @@ class ProtTomoTwinClusterCreateUmaps(ProtTomoTwinBase):
     def _summary(self):
         if self.isFinished():
             return ["UMAP embeddings created for input tomograms."]
-
 
     # --------------------------- UTILS functions ------------------------------
     def _getUmapArgs(self, tomoId):
