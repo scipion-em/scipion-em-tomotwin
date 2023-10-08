@@ -45,6 +45,14 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
         ProtTomoTwinBase.__init__(self, **kwargs)
         self.stepsExecutionMode = params.STEPS_PARALLEL
 
+    # --------------------------- DEFINE param functions ----------------------
+    def _defineParams(self, form):
+        self._defineInputParams(form)
+        self._defineEmbedParams(form)
+        self._definePickingParams(form)
+
+        form.addParallelSection(threads=1)
+
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._createFilenameTemplates()
@@ -54,7 +62,7 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
                                                   prerequisites=convertStepId)
         deps.append(embedRefStepId)
 
-        tomoIds = self.inputTomos.get().aggregate(["COUNT"], "_tsId", ["_tsId"])
+        tomoIds = self._getInputTomos().aggregate(["COUNT"], "_tsId", ["_tsId"])
         tomoIds = set([d['_tsId'] for d in tomoIds])
 
         for tomoId in tomoIds:
@@ -78,7 +86,7 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
         errors = []
 
         refs = self.inputRefs.get()
-        scale = refs.getSamplingRate() / self.inputTomos.get().getSamplingRate()
+        scale = refs.getSamplingRate() / self._getInputTomos().getSamplingRate()
         doScale = abs(scale - 1.0) > 0.001
         if doScale:
             errors.append("Tomograms and references must have the same pixel size!")
@@ -112,7 +120,7 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
     def _getEmbedRefsArgs(self):
         return [
             f"subvolumes -m {Plugin.getVar(TOMOTWIN_MODEL)}",
-            f"-v input_refs/*.mrc",
+            f"-v ../tmp/input_refs/*.mrc",
             f"-b {self.batchRefs.get()}",
             f"-o embed/refs"
         ]
@@ -121,5 +129,5 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
         return [
             f"distance -r embed/refs/embeddings.temb",
             f"-v embed/tomos/{tomoId}_embeddings.temb",
-            f"-o ../extra/{tomoId}/"
+            f"-o {tomoId}/"
         ]

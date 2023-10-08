@@ -31,10 +31,10 @@ from pwem.protocols import ProtImportVolumes
 from tomo.protocols import ProtImportTomograms
 from tomo.tests import DataSet
 
-from ..protocols import ProtTomoTwinRefPicking, ProtTomoTwinCreateMasks
+from ..protocols import *
 
 
-class TestTomoTwinPicking(BaseTest):
+class TestTomoTwinBase(BaseTest):
     @classmethod
     def setUpClass(cls):
         setupTestProject(cls)
@@ -42,7 +42,7 @@ class TestTomoTwinPicking(BaseTest):
         cls.tomo = cls.dataset.getFile('tomoEmd10439')
         cls.subtomos = cls.dataset.getFile('subtomograms/emd_10439-01*.mrc')
 
-    def test_run(self):
+    def runImportTomos(self):
         print(magentaStr("\n==> Importing data - tomograms:"))
         protImportTomo = self.newProtocol(ProtImportTomograms,
                                           filesPath=self.tomo,
@@ -51,12 +51,23 @@ class TestTomoTwinPicking(BaseTest):
         self.assertIsNotNone(protImportTomo.Tomograms,
                              msg="There was a problem with tomogram import")
 
+        return protImportTomo
+
+    def runImportVolumes(self):
         print(magentaStr("\n==> Importing data - volumes:"))
         protImportVols = self.newProtocol(ProtImportVolumes,
                                           filesPath=self.subtomos, samplingRate=10)
         self.launchProtocol(protImportVols)
         self.assertIsNotNone(protImportVols.outputVolumes,
                              "There was a problem with volumes import")
+
+        return protImportVols
+
+
+class TestTomoTwinRefBased(TestTomoTwinBase):
+    def test_run(self):
+        protImportTomo = self.runImportTomos()
+        protImportVols = self.runImportVolumes()
 
         print(magentaStr("\n==> Testing tomotwin - create tomo masks:"))
         protCreateMasks = self.newProtocol(ProtTomoTwinCreateMasks,
@@ -79,3 +90,17 @@ class TestTomoTwinPicking(BaseTest):
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
         self.assertAlmostEqual(outputCoords.getSize(), 2250, delta=100)
         self.assertEqual(outputCoords.getBoxSize(), 44)
+
+
+class TestTomoTwinClusterBased(TestTomoTwinBase):
+    def test_run(self):
+        protImportTomo = self.runImportTomos()
+
+        print(magentaStr("\n==> Testing tomotwin - clustering-based picking (step 1):"))
+        protPicking = self.newProtocol(ProtTomoTwinClusterCreateUmaps,
+                                       inputTomos=protImportTomo.Tomograms,
+                                       batchTomos=128,
+                                       zMin=200, zMax=204)
+        self.launchProtocol(protPicking)
+        self.assertTrue(protPicking.isFinished(),
+                        "Tomotwin cluster-based embedding has failed")

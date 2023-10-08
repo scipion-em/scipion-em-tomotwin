@@ -54,7 +54,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
         })
 
     # --------------------------- DEFINE param functions ----------------------
-    def _defineParams(self, form):
+    def _defineInputParams(self, form):
         form.addSection(label='Input')
         form.addHidden(params.GPU_LIST, params.StringParam,
                        default='0', help="Choose GPU IDs")
@@ -82,14 +82,9 @@ class ProtTomoTwinBase(ProtTomoPicking):
                                'use of masks. With masks you can define which regions '
                                'of your tomogram get actually embedded and therefore '
                                'speedup the embedding.')
-        form.addParam('numCpus', params.IntParam, default=4,
-                      label="Number of CPUs",
-                      help="*Important!* This is different from number of threads "
-                           "above as threads are used for GPU parallelization. "
-                           "Provide here the number of *CPU cores* for tomotwin locate "
-                           "process.")
 
-        form.addSection(label="Advanced params")
+    def _defineEmbedParams(self, form):
+        form.addSection(label="Embedding params")
         line = form.addLine("Batch size for embedding",
                             help="To have your tomograms embedded as quick "
                                  "as possible, you should choose a batch size that "
@@ -122,6 +117,14 @@ class ProtTomoTwinBase(ProtTomoPicking):
                                "you may need to reduce the Sample size and/or "
                                "Chunk size values (default 400,000).")
 
+    def _definePickingParams(self, form):
+        form.addSection(label="Picking params")
+        form.addParam('numCpus', params.IntParam, default=4,
+                      label="Number of CPUs",
+                      help="*Important!* This is different from number of threads "
+                           "above as threads are used for GPU parallelization. "
+                           "Provide here the number of *CPU cores* for tomotwin locate "
+                           "process.")
         form.addParam('boxSize', params.IntParam, default=37,
                       label="Box size (px)",
                       help="The box size only influences the non-maximum "
@@ -144,8 +147,6 @@ class ProtTomoTwinBase(ProtTomoPicking):
                            "in case you are interested, this is akin to a "
                            "location confidence heatmap for each protein.")
 
-        form.addParallelSection(threads=1, mpi=0)
-
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
         """ Copy or link inputs to tmp. """
@@ -162,7 +163,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
                 refFn = self._getTmpPath(f"input_refs/{refFn}")
                 convertToMrc(inputFn, refFn)
 
-        for tomo in self.inputTomos.get():
+        for tomo in self._getInputTomos():
             inputFn = tomo.getFileName()
             tomoFn = self._getTmpPath(tomo.getTsId() + ".mrc")
             convertToMrc(inputFn, tomoFn)
@@ -194,7 +195,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
                         self._getPickArgs(tomoId))
 
     def createOutputStep(self, fromViewer=False):
-        setOfTomograms = self.inputTomos.get()
+        setOfTomograms = self._getInputTomos()
         suffix = self._getOutputSuffix(SetOfCoordinates3D)
         coord3DSetDict = {}
         setOfCoord3D = self._createSetOfCoordinates3D(setOfTomograms, suffix)
@@ -227,7 +228,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
     def _warnings(self):
         warnings = []
 
-        if self.inputTomos.get().getSamplingRate() - 10.0 > 0.5:
+        if self._getInputTomos().getSamplingRate() - 10.0 > 0.5:
             warnings.append("TomoTwin was trained on tomograms with a "
                             "pixel size of 10A. While in practice we've used "
                             "it with pixel sizes ranging from 9.2A to 25.0A, "
@@ -249,7 +250,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
         return "\n".join(summary)
 
     def _methods(self):
-        tomos = self.inputTomos.get()
+        tomos = self._getInputTomos()
         return [
             "Subtomogram coordinates obtained with TomoTwin picker",
             "A total of %d tomograms of dimensions %s were used"
@@ -260,7 +261,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
     def _getEmbedTomoArgs(self, tomoId):
         args = [
             f"tomogram -m {Plugin.getVar(TOMOTWIN_MODEL)}",
-            f"-v {tomoId}.mrc",
+            f"-v ../tmp/{tomoId}.mrc",
             f"-b {self.batchTomos.get()}",
             f"-s 2 -o embed/tomos"
         ]
@@ -271,7 +272,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
         if self._hasMasks():
             maskFn = f"input_masks/{tomoId}_mask.mrc"
             if os.path.exists(self._getTmpPath(maskFn)):
-                args.append(f"--mask {maskFn}")
+                args.append(f"--mask ../tmp/{maskFn}")
 
         return args
 
@@ -281,8 +282,8 @@ class ProtTomoTwinBase(ProtTomoPicking):
 
     def _getLocateArgs(self, tomoId):
         params = [
-            f"findmax -m ../extra/{tomoId}/map.tmap",
-            f"-o ../extra/{tomoId}/locate",
+            f"findmax -m {tomoId}/map.tmap",
+            f"-o {tomoId}/locate",
             f"-t {self.tolerance.get()}",
             f"-b {self.boxSize.get()}",
             f"-g {self.globalMin.get()}",
@@ -296,8 +297,8 @@ class ProtTomoTwinBase(ProtTomoPicking):
 
     def _getPickArgs(self, tomoId):
         return [
-            f"-l ../extra/{tomoId}/locate/located.tloc",
-            f"-o ../extra/{tomoId}/"
+            f"-l {tomoId}/locate/located.tloc",
+            f"-o {tomoId}/"
         ]
 
     def getProgram(self, program, gpu=True):
@@ -308,7 +309,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
         """ Execute runJob in tmpDir. """
         self.runJob(program, " ".join(args),
                     env=Plugin.getEnviron(),
-                    cwd=self._getTmpPath())
+                    cwd=self._getExtraPath())
 
     def getOutputDir(self, fromViewer=False):
         """ Results from the viewer will be in the project Tmp folder. """
@@ -319,3 +320,6 @@ class ProtTomoTwinBase(ProtTomoPicking):
 
     def _hasMasks(self):
         return Plugin.versionGE(V0_5_1) and self.inputMasks.hasValue()
+
+    def _getInputTomos(self):
+        return self.inputTomos.get()

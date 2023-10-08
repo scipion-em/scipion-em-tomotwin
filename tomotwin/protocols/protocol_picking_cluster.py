@@ -25,46 +25,72 @@
 # **************************************************************************
 
 import os
+import glob
 
 from pyworkflow import BETA
-from pyworkflow.utils import yellowStr
+from pyworkflow.utils import yellowStr, makePath, createAbsLink
+import pyworkflow.protocol.params as params
 from tomo.objects import SetOfCoordinates3D
 
 from .. import Plugin
+from ..convert import convertToMrc
 from .protocol_base import ProtTomoTwinBase
 
 
 class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
-    """ Clustering-based picking with TomoTwin. """
+    """ Clustering-based picking with TomoTwin (step 2).
 
-    _label = 'clustering-based picking'
+    The second step includes interactive clustering of UMAP embeddings and
+    creating output coordinates.
+    """
+
+    _label = 'clustering-based picking (step 2)'
     _devStatus = BETA
     _possibleOutputs = {'output3DCoordinates': SetOfCoordinates3D}
+
+    # --------------------------- DEFINE param functions ----------------------
+    def _defineParams(self, form):
+        form.addSection(label='Input')
+        form.addParam("inputUmaps", params.PointerParam,
+                      pointerClass="ProtTomoTwinClusterCreateUmaps",
+                      label="Previous cluster picking protocol (step 1)")
+
+        self._definePickingParams(form)
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._createFilenameTemplates()
         self._insertFunctionStep(self.convertInputStep)
 
-        tomoIds = self.inputTomos.get().aggregate(["COUNT"], "_tsId", ["_tsId"])
+        tomoIds = self._getInputTomos().aggregate(["COUNT"], "_tsId", ["_tsId"])
         tomoIds = set([d['_tsId'] for d in tomoIds])
 
         for tomoId in tomoIds:
-            self._insertFunctionStep(self.embedTomoStep, tomoId)
-            self._insertFunctionStep(self.createUmapsStep, tomoId)
+            makePath(self._getExtraPath(tomoId))
             self._insertFunctionStep(self.pickClustersStep, tomoId)
             self._insertFunctionStep(self.pickingStep, tomoId)
 
         self._insertFunctionStep(self.createOutputStep)
 
     # --------------------------- STEPS functions -----------------------------
-    def createUmapsStep(self, tomoId):
-        """ Estimate UMAP manifold and Generate Embedding Mask. """
-        self.runProgram(self.getProgram("tomotwin_tools.py"),
-                        self._getUmapArgs(tomoId))
+    def convertInputStep(self):
+        """ Copy or link inputs to tmp. """
+        for tomo in self._getInputTomos():
+            inputFn = tomo.getFileName()
+            tomoFn = self._getTmpPath(tomo.getTsId() + ".mrc")
+            convertToMrc(inputFn, tomoFn)
 
     def pickClustersStep(self, tomoId):
-        """ Load data for clustering in Napari. """
+        """ Link embeddings from the previous protocol and
+        load data for clustering in Napari. """
+        inputUmapsProt = self._getInputProt()
+        srcDir = inputUmapsProt._getExtraPath(tomoId)
+        targetFn = lambda fn: self._getExtraPath(tomoId, os.path.basename(fn))
+        files = glob.glob(os.path.join(srcDir, f"{tomoId}_embeddings*"))
+        for f in files:
+            self.info(f"Linking {f} -> {targetFn(f)}")
+            createAbsLink(os.path.abspath(f), targetFn(f))
+
         maskFn = f"{tomoId}_embeddings_label_mask.mrci"
         if os.path.exists(self._getExtraPath(tomoId, maskFn)):
             self.info("Loading data for clustering in Napari..")
@@ -104,20 +130,30 @@ class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
         self.runProgram(self.getProgram("tomotwin_pick.py", gpu=False),
                         self._getPickArgs(tomoId))
 
-    # --------------------------- UTILS functions ------------------------------
-    def _getUmapArgs(self, tomoId):
-        return [
-            f"umap -i embed/tomos/{tomoId}_embeddings.temb",
-            f"-o ../extra/{tomoId}/"
-        ]
+    # --------------------------- INFO functions ------------------------------
+    def _warnings(self):
+        return []
 
+    def _methods(self):
+        return []
+
+    # --------------------------- UTILS functions ------------------------------
     def _getMapArgs(self, tomoId):
         clustersFn = self._getExtraPath(tomoId, "cluster_targets.temb")
         if not os.path.exists(clustersFn):
             raise FileNotFoundError(f"Missing file from Napari: {clustersFn}")
 
+        tomoEmbedded = self._getInputProt()._getExtraPath(f"embed/tomos/{tomoId}_embeddings.temb")
+
         return [
-            f"distance -r ../extra/{tomoId}/cluster_targets.temb",
-            f"-v embed/tomos/{tomoId}_embeddings.temb",
-            f"-o ../extra/{tomoId}/"
+            f"distance -r {tomoId}/cluster_targets.temb",
+            f"-v {os.path.abspath(tomoEmbedded)}",
+            f"-o {tomoId}/"
         ]
+
+    def _getInputProt(self):
+        return self.inputUmaps.get()
+
+    def _getInputTomos(self):
+        """ Override base class. """
+        return self._getInputProt().inputTomos.get()

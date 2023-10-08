@@ -72,9 +72,10 @@ Command to activate the Napari viewer environment.
 
 Verifying
 ---------
-To check the installation, simply run the following Scipion test:
+To check the installation, simply run the following Scipion tests:
 
-``scipion test tomotwin.tests.test_protocols_tomotwin.TestTomoTwinRefPicking``
+* ``scipion tests tomotwin.tests.test_protocols_tomotwin.TestTomoTwinRefBased``
+* ``scipion tests tomotwin.tests.test_protocols_tomotwin.TestTomoTwinClusterBased``
 
 Supported versions
 ------------------
@@ -85,6 +86,8 @@ Protocols
 ----------
 
 * reference-based picking
+* clustering-based picking (step 1)
+* clustering-based picking (step 2)
 * create tomo masks
 
 References
