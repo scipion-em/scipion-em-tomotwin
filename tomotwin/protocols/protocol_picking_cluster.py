@@ -111,8 +111,7 @@ class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
             text = "".join(text)
             self.info(yellowStr(text))
 
-            Plugin.runNapariBoxManager(self._getExtraPath(tomoId),
-                                       "napari", args)
+            Plugin.runNapariBoxManager(self._getExtraPath(tomoId), "napari", args)
         else:
             self.info(f"Skipping tomo {tomoId}, no embedding mask file found.")
 

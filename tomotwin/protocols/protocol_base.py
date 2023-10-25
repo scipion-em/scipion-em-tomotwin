@@ -36,7 +36,7 @@ from tomo.objects import SetOfCoordinates3D
 from tomo.constants import BOTTOM_LEFT_CORNER
 
 from .. import Plugin
-from ..constants import TOMOTWIN_MODEL, V0_5_1
+from ..constants import TOMOTWIN_MODEL
 from ..convert import readSetOfCoordinates3D, convertToMrc
 
 
@@ -74,14 +74,13 @@ class ProtTomoTwinBase(ProtTomoPicking):
                           help='Specify a set of 3D volumes. They *must have '
                                'the same pixel size as tomograms and 37 px dimensions*.')
 
-        if Plugin.versionGE(V0_5_1):
-            form.addParam('inputMasks', params.PointerParam,
-                          pointerClass='SetOfTomoMasks',
-                          label='Input masks', allowsNull=True,
-                          help='With TomoTwin >=0.5, the embedding command supports the '
-                               'use of masks. With masks you can define which regions '
-                               'of your tomogram get actually embedded and therefore '
-                               'speedup the embedding.')
+        form.addParam('inputMasks', params.PointerParam,
+                      pointerClass='SetOfTomoMasks',
+                      label='Input masks', allowsNull=True,
+                      help='With TomoTwin >=0.5, the embedding command supports the '
+                           'use of masks. With masks you can define which regions '
+                           'of your tomogram get actually embedded and therefore '
+                           'speedup the embedding.')
 
     def _defineEmbedParams(self, form):
         form.addSection(label="Embedding params")
@@ -319,7 +318,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
             return self._getExtraPath()
 
     def _hasMasks(self):
-        return Plugin.versionGE(V0_5_1) and self.inputMasks.hasValue()
+        return self.inputMasks.hasValue()
 
     def _getInputTomos(self):
         return self.inputTomos.get()

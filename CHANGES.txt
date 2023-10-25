@@ -1,3 +1,6 @@
+3.3:
+    - fix napari viewer args
+    - add v0.6.1
 3.2:
     - split cluster picking into two protocols
     - add missing params chunk_size and fit_sample_size to cmd args

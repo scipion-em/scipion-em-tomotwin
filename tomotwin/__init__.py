@@ -142,6 +142,7 @@ class Plugin(pwem.Plugin):
         napariVar = tomoPlugin.getVar(NAPARI_ENV_ACTIVATION)
         fullProgram = '%s %s && %s' % (cls.getCondaActivationCmd(),
                                        napariVar, program)
+        print(f"Running command: {fullProgram} {args}")
         pwutils.runJob(None, fullProgram, args, env=cls.getEnviron(),
                        cwd=tmpDir, numberOfMpi=1)
 
