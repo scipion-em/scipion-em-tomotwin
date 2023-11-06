@@ -33,6 +33,7 @@ from pwem.protocols import ProtCreateMask3D
 from tomo.objects import SetOfTomoMasks, TomoMask
 
 from .. import Plugin
+from ..constants import TOMOTWIN_MODEL
 from ..convert import convertToMrc
 
 
@@ -58,6 +59,15 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
                       help='It is recommended to rescale tomograms to '
                            '10 A/px in advance. Tomograms should be '
                            'without denoising or lowpass filtering.')
+
+        if Plugin.versionGE("0.7.0"):
+            form.addParam('roiEstimate', params.EnumParam,
+                          choices=['median', 'intensity'],
+                          default=0,
+                          display=params.EnumParam.DISPLAY_HLIST,
+                          label='ROI estimation based on:',
+                          help='Estimate potential ROIs based on median '
+                               'embedding (default) or intensity values.')
 
         form.addParallelSection(threads=1)
 
@@ -85,10 +95,18 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
 
     def createMaskStep(self, tomoId):
         """ Create mask for each tomo. """
-        args = [
-            f"embedding_mask -i {tomoId}.mrc",
-            f"-o ../extra/"
-        ]
+        args = ["embedding_mask"]
+
+        if Plugin.versionGE("0.7.0"):
+            args.extend([
+                f"{self.getEnumText('roiEstimate')}",
+                f"-m {Plugin.getVar(TOMOTWIN_MODEL)}"
+            ])
+
+        args.extend([
+            f"-i {tomoId}.mrc",
+            "-o ../extra/"
+        ])
 
         self.runJob(self.getProgram("tomotwin_tools.py"), " ".join(args),
                     env=Plugin.getEnviron(),
