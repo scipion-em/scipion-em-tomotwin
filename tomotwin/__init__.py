@@ -98,10 +98,10 @@ class Plugin(pwem.Plugin):
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
-        version = f"v{version}" if version in ['0.5.1', '0.6.1'] else version
+        git_version = f"v{version}" if version in ['0.5.1', '0.6.1'] else version
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
-            f"git clone -b {version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
+            f"git clone -b {git_version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
             f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
             f"conda create -y -n {ENV_NAME} -c nvidia -c pytorch -c rapidsai -c conda-forge",
             f"'pytorch>=2.1' torchvision 'pandas<2' scipy numpy matplotlib",
