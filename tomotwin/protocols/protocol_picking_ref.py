@@ -120,14 +120,14 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
     def _getEmbedRefsArgs(self):
         return [
             f"subvolumes -m {Plugin.getVar(TOMOTWIN_MODEL)}",
-            f"-v ../tmp/input_refs/*.mrc",
+            "-v ../tmp/input_refs/*.mrc",
             f"-b {self.batchRefs.get()}",
-            f"-o embed/refs"
+            "-o embed/refs"
         ]
 
     def _getMapArgs(self, tomoId):
         return [
-            f"distance -r embed/refs/embeddings.temb",
+            "distance -r embed/refs/embeddings.temb",
             f"-v embed/tomos/{tomoId}_embeddings.temb",
             f"-o {tomoId}/"
         ]

@@ -262,7 +262,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
             f"tomogram -m {Plugin.getVar(TOMOTWIN_MODEL)}",
             f"-v ../tmp/{tomoId}.mrc",
             f"-b {self.batchTomos.get()}",
-            f"-s 2 -o embed/tomos"
+            "-s 2 -o embed/tomos"
         ]
 
         if self.zMin > 0 and self.zMax > 0:

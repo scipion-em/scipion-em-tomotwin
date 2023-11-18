@@ -104,11 +104,11 @@ class Plugin(pwem.Plugin):
             f"git clone -b {git_version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
             f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
             f"conda create -y -n {ENV_NAME} -c nvidia -c pytorch -c rapidsai -c conda-forge",
-            f"'pytorch>=2.1' torchvision 'pandas<2' scipy numpy matplotlib",
-            f"pytables cuML=23.04 cudatoolkit=11.8 'protobuf>3.20'",
-            f"tensorboard optuna mysql-connector-python &&",
+            "'pytorch>=2.1' torchvision 'pandas<2' scipy numpy matplotlib",
+            "pytables cuML=23.04 cudatoolkit=11.8 'protobuf>3.20'",
+            "tensorboard optuna mysql-connector-python &&",
             f"conda activate {ENV_NAME} &&",
-            f"pip install -e .",
+            "pip install -e .",
         ]
 
         tomotwinCmds = [(" ".join(installCmds), "setup.py")]
@@ -164,7 +164,7 @@ class Plugin(pwem.Plugin):
         """
         v1 = cls.getActiveVersion()
         if v1 not in VERSIONS:
-            raise Exception("This version of TomoTwin is not supported: ", v1)
+            raise ValueError("This version of TomoTwin is not supported: ", v1)
 
         if VERSIONS.index(v1) < VERSIONS.index(version):
             return False
