@@ -24,21 +24,25 @@
 # *
 # **************************************************************************
 
-
 def getTomoTwinEnvName(version):
-    return "tomotwin-%s" % version
+    return f"tomotwin-{version}"
 
 
-V0_5_1 = '0.5.1'
-VERSIONS = ['0.3.0', V0_5_1]
+def getModelName(version):
+    return f"tomotwin_model_p120_{version}_loss.pth"
+
+
+VERSIONS = ['0.5.1', '0.6.1', '0.7.0']
 TOMOTWIN_DEFAULT_VER_NUM = VERSIONS[-1]
 
 DEFAULT_ENV_NAME = getTomoTwinEnvName(TOMOTWIN_DEFAULT_VER_NUM)
 DEFAULT_ACTIVATION_CMD = 'conda activate ' + DEFAULT_ENV_NAME
 TOMOTWIN_ENV_ACTIVATION = 'TOMOTWIN_ENV_ACTIVATION'
 
+# Model vars
 TOMOTWIN_MODEL = 'TOMOTWIN_MODEL'
-DEFAULT_MODEL = 'tomotwin_model_p120_052022_loss.pth'
+MODEL_VERSIONS = ['052022', '092023']
+DEFAULT_MODEL = MODEL_VERSIONS[-1]
 
 # Napari variables
 NAPARI_ENV_ACTIVATION = 'NAPARI_ENV_ACTIVATION'

@@ -31,7 +31,8 @@ from pwem.protocols import ProtImportVolumes
 from tomo.protocols import ProtImportTomograms
 from tomo.tests import DataSet
 
-from ..protocols import *
+from ..protocols import (ProtTomoTwinCreateMasks, ProtTomoTwinRefPicking,
+                         ProtTomoTwinClusterCreateUmaps)
 
 
 class TestTomoTwinBase(BaseTest):

@@ -32,7 +32,7 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.2'
+__version__ = '3.3'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
@@ -45,11 +45,11 @@ class Plugin(pwem.Plugin):
     @classmethod
     def _defineVariables(cls):
         cls._defineVar(TOMOTWIN_ENV_ACTIVATION, DEFAULT_ACTIVATION_CMD)
-        cls._defineEmVar(TOMOTWIN_MODEL, cls._getTomotwinModel())
+        cls._defineEmVar(TOMOTWIN_MODEL, cls._getTomotwinModel(DEFAULT_MODEL))
 
     @classmethod
-    def _getTomotwinModel(cls):
-        return os.path.join(f"tomotwin_model-052022", DEFAULT_MODEL)
+    def _getTomotwinModel(cls, version):
+        return os.path.join(f"tomotwin_model-{version}", getModelName(version))
 
     @classmethod
     def getTomoTwinEnvActivation(cls):
@@ -85,27 +85,30 @@ class Plugin(pwem.Plugin):
             cls.addTomoTwinPackage(env, ver,
                                    default=ver == TOMOTWIN_DEFAULT_VER_NUM)
 
-        url = "https://ftp.gwdg.de/pub/misc/sphire/TomoTwin/models/tomotwin_model_p120_052022_loss.pth"
-        env.addPackage("tomotwin_model", version="052022",
-                       tar='void.tgz',
-                       commands=[(f"wget -O {DEFAULT_MODEL} {url}",
-                                  DEFAULT_MODEL)],
-                       neededProgs=["wget"],
-                       default=True)
+        url2022 = "https://ftp.gwdg.de/pub/misc/sphire/TomoTwin/models/tomotwin_model_p120_052022_loss.pth"
+        url2023 = "https://zenodo.org/records/8358240/files/tomotwin_latest.pth?download=1"
+        for ver, url in zip(MODEL_VERSIONS, [url2022, url2023]):
+            env.addPackage("tomotwin_model", version=ver,
+                           tar='void.tgz',
+                           commands=[(f"wget -O {getModelName(ver)} {url}",
+                                      getModelName(ver))],
+                           neededProgs=["wget"],
+                           default=ver == DEFAULT_MODEL)
 
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
+        git_version = f"v{version}" if version in ['0.5.1', '0.6.1'] else version
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
-            f"git clone -b v{version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
+            f"git clone -b {git_version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
             f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
-            f"conda create -y -n {ENV_NAME} -c conda-forge -c pytorch -c rapidsai -c nvidia",
-            f"'pytorch<2' torchvision 'pandas<2' scipy numpy matplotlib",
-            f"pytables cuML=23.04 cudatoolkit=11.8 'protobuf>3.20'",
-            f"tensorboard optuna mysql-connector-python &&",
+            f"conda create -y -n {ENV_NAME} -c nvidia -c pytorch -c rapidsai -c conda-forge",
+            "'pytorch>=2.1' torchvision 'pandas<2' scipy numpy matplotlib",
+            "pytables cuML=23.04 cudatoolkit=11.8 'protobuf>3.20'",
+            "tensorboard optuna mysql-connector-python &&",
             f"conda activate {ENV_NAME} &&",
-            f"pip install -e .",
+            "pip install -e .",
         ]
 
         tomotwinCmds = [(" ".join(installCmds), "setup.py")]
@@ -142,6 +145,7 @@ class Plugin(pwem.Plugin):
         napariVar = tomoPlugin.getVar(NAPARI_ENV_ACTIVATION)
         fullProgram = '%s %s && %s' % (cls.getCondaActivationCmd(),
                                        napariVar, program)
+        print(f"Running command: {fullProgram} {args}")
         pwutils.runJob(None, fullProgram, args, env=cls.getEnviron(),
                        cwd=tmpDir, numberOfMpi=1)
 
@@ -160,7 +164,7 @@ class Plugin(pwem.Plugin):
         """
         v1 = cls.getActiveVersion()
         if v1 not in VERSIONS:
-            raise Exception("This version of TomoTwin is not supported: ", v1)
+            raise ValueError("This version of TomoTwin is not supported: ", v1)
 
         if VERSIONS.index(v1) < VERSIONS.index(version):
             return False
