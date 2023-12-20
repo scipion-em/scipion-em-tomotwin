@@ -32,7 +32,7 @@ def getModelName(version):
     return f"tomotwin_model_p120_{version}_loss.pth"
 
 
-VERSIONS = ['0.5.1', '0.6.1', '0.7.0']
+VERSIONS = ['0.6.1', '0.7.0', '0.8.0']
 TOMOTWIN_DEFAULT_VER_NUM = VERSIONS[-1]
 
 DEFAULT_ENV_NAME = getTomoTwinEnvName(TOMOTWIN_DEFAULT_VER_NUM)
