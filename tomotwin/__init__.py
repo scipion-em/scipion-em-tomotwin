@@ -32,7 +32,7 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.3'
+__version__ = '3.4'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
@@ -98,7 +98,7 @@ class Plugin(pwem.Plugin):
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
-        git_version = f"v{version}" if version in ['0.5.1', '0.6.1'] else version
+        git_version = f"v{version}" if version in ['0.6.1', '0.8.0'] else version
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
             f"git clone -b {git_version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
@@ -133,7 +133,7 @@ class Plugin(pwem.Plugin):
         """ Create TomoTwin command line. """
         fullProgram = f"{cls.getActivationCmd()} && "
         if gpus and not useQueue:
-            fullProgram += f"CUDA_VISIBLE_DEVICES=%(GPU)s "
+            fullProgram += "CUDA_VISIBLE_DEVICES=%(GPU)s "
 
         return fullProgram + program
 

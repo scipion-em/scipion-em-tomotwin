@@ -91,29 +91,30 @@ class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
             self.info(f"Linking {f} -> {targetFn(f)}")
             createAbsLink(os.path.abspath(f), targetFn(f))
 
-        maskFn = f"{tomoId}_embeddings_label_mask.mrci"
-        if os.path.exists(self._getExtraPath(tomoId, maskFn)):
-            self.info("Loading data for clustering in Napari..")
-            tomoPath = os.path.relpath(self._getTmpPath(tomoId + ".mrc"),
-                                       self._getExtraPath(tomoId))
-            args = f"{tomoPath} {maskFn}"
+        self.info("Loading data for clustering in Napari..")
+        tomoPath = os.path.relpath(self._getTmpPath(tomoId + ".mrc"),
+                                   self._getExtraPath(tomoId))
+        args = f"{tomoPath}"
 
-            text = [
-                "Next open the napari-tomotwin clustering tool ",
-                "via Plugins -> napari-tomotwin -> Cluster UMAP embeddings. ",
-                "Then choose the Path to UMAP by clicking on Select file ",
-                "and provide the path to your_tomo_embeddings.tumap. ",
-                "Click Load and after a second, a 2D plot of the umap embeddings ",
-                "should appear in the plugin window. ",
-                "Continue by following https://tomotwin-cryoet.readthedocs.io/en/latest/tutorials/tutorials_overview.html#find-target-clusters ",
-                "In the end, save cluster targets in the cluster_targets.temb file inside extra/tomoId folder."
-            ]
-            text = "".join(text)
-            self.info(yellowStr(text))
+        if not Plugin.versionGE("0.8.0"):
+            maskFn = f"{tomoId}_embeddings_label_mask.mrci"
+            if os.path.exists(self._getExtraPath(tomoId, maskFn)):
+                args += f" {maskFn}"
 
-            Plugin.runNapariBoxManager(self._getExtraPath(tomoId), "napari", args)
-        else:
-            self.info(f"Skipping tomo {tomoId}, no embedding mask file found.")
+        text = [
+            "Next open the napari-tomotwin clustering tool ",
+            "via Plugins -> napari-tomotwin -> Cluster UMAP embeddings. ",
+            "Then choose the Path to UMAP by clicking on Select file ",
+            "and provide the path to your_tomo_embeddings.tumap. ",
+            "Click Load and after a second, a 2D plot of the umap embeddings ",
+            "should appear in the plugin window. ",
+            "Continue by following https://tomotwin-cryoet.readthedocs.io/en/latest/tutorials/tutorials_overview.html#find-target-clusters ",
+            "In the end, save cluster targets in the cluster_targets.temb file inside extra/tomoId folder."
+        ]
+        text = "".join(text)
+        self.info(yellowStr(text))
+
+        Plugin.runNapariBoxManager(self._getExtraPath(tomoId), "napari", args)
 
     def pickingStep(self, tomoId):
         """ Localize potential particles.  """
