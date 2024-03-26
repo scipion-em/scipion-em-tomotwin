@@ -82,15 +82,14 @@ class TestTomoTwinRefBased(TestTomoTwinBase):
                                        inputTomos=protImportTomo.Tomograms,
                                        inputRefs=protImportVols.outputVolumes,
                                        inputMasks=protCreateMasks.outputMasks,
-                                       batchTomos=128,
+                                       batchTomos=256,
                                        batchRefs=12,
-                                       boxSize=44,
                                        zMin=200, zMax=204)
         self.launchProtocol(protPicking)
         outputCoords = protPicking.output3DCoordinates
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
         self.assertAlmostEqual(outputCoords.getSize(), 2250, delta=100)
-        self.assertEqual(outputCoords.getBoxSize(), 44)
+        self.assertEqual(outputCoords.getBoxSize(), 37)
 
 
 class TestTomoTwinClusterBased(TestTomoTwinBase):

@@ -32,7 +32,7 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.4'
+__version__ = '3.4.1'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
@@ -98,17 +98,17 @@ class Plugin(pwem.Plugin):
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
-        git_version = f"v{version}" if version in ['0.6.1', '0.8.0'] else version
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
-            f"git clone -b {git_version} https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
-            f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
+            f"git clone https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
+            f"cd {ENV_NAME} && git checkout v{version} &&",
+            f"{cls.getCondaActivationCmd()}",
             f"conda create -y -n {ENV_NAME} -c nvidia -c pytorch -c rapidsai -c conda-forge",
             "'pytorch>=2.1' torchvision 'pandas<2' scipy numpy matplotlib",
-            "pytables cuML=23.04 cudatoolkit=11.8 'protobuf>3.20'",
-            "tensorboard optuna mysql-connector-python &&",
+            "pytables cuML=23.12 cuda-version=11.8 'protobuf>3.20'",
+            "tensorboard optuna pytorch-metric-learning &&",
             f"conda activate {ENV_NAME} &&",
-            "pip install -e .",
+            "pip install mysql-connector-python && pip install -e .",
         ]
 
         tomotwinCmds = [(" ".join(installCmds), "setup.py")]
