@@ -39,15 +39,15 @@ class TestTomoTwinBase(BaseTest):
     @classmethod
     def setUpClass(cls):
         setupTestProject(cls)
-        cls.dataset = DataSet.getDataSet("emd_10439")
-        cls.tomo = cls.dataset.getFile('tomoEmd10439')
-        cls.subtomos = cls.dataset.getFile('subtomograms/emd_10439-01*.mrc')
+        cls.dataset = DataSet.getDataSet("tomotwin")
+        cls.tomo = cls.dataset.getFile('tomo')
+        cls.subtomos = cls.dataset.getFile('reference')
 
     def runImportTomos(self):
         print(magentaStr("\n==> Importing data - tomograms:"))
         protImportTomo = self.newProtocol(ProtImportTomograms,
                                           filesPath=self.tomo,
-                                          samplingRate=10)
+                                          samplingRate=13.60)
         self.launchProtocol(protImportTomo)
         self.assertIsNotNone(protImportTomo.Tomograms,
                              msg="There was a problem with tomogram import")
@@ -57,9 +57,10 @@ class TestTomoTwinBase(BaseTest):
     def runImportVolumes(self):
         print(magentaStr("\n==> Importing data - volumes:"))
         protImportVols = self.newProtocol(ProtImportVolumes,
-                                          filesPath=self.subtomos, samplingRate=10)
+                                          filesPath=self.subtomos,
+                                          samplingRate=13.60)
         self.launchProtocol(protImportVols)
-        self.assertIsNotNone(protImportVols.outputVolumes,
+        self.assertIsNotNone(protImportVols.outputVolume,
                              "There was a problem with volumes import")
 
         return protImportVols
@@ -80,28 +81,33 @@ class TestTomoTwinRefBased(TestTomoTwinBase):
         print(magentaStr("\n==> Testing tomotwin - reference-based picking:"))
         protPicking = self.newProtocol(ProtTomoTwinRefPicking,
                                        inputTomos=protImportTomo.Tomograms,
-                                       inputRefs=protImportVols.outputVolumes,
+                                       inputRefs=protImportVols.outputVolume,
                                        inputMasks=protCreateMasks.outputMasks,
-                                       batchTomos=128,
-                                       batchRefs=12,
-                                       boxSize=44,
-                                       zMin=200, zMax=204)
+                                       batchTomos=400,
+                                       batchRefs=12)
         self.launchProtocol(protPicking)
         outputCoords = protPicking.output3DCoordinates
         self.assertIsNotNone(outputCoords, "Tomotwin reference-based picking has failed")
-        self.assertAlmostEqual(outputCoords.getSize(), 2250, delta=100)
-        self.assertEqual(outputCoords.getBoxSize(), 44)
+        self.assertAlmostEqual(outputCoords.getSize(), 976, delta=100)
+        self.assertEqual(outputCoords.getBoxSize(), 37)
 
 
 class TestTomoTwinClusterBased(TestTomoTwinBase):
     def test_run(self):
         protImportTomo = self.runImportTomos()
 
+        print(magentaStr("\n==> Testing tomotwin - create tomo masks:"))
+        protCreateMasks = self.newProtocol(ProtTomoTwinCreateMasks,
+                                           inputTomos=protImportTomo.Tomograms)
+        self.launchProtocol(protCreateMasks)
+        self.assertIsNotNone(protCreateMasks.outputMasks,
+                             "Tomo mask creation has failed")
+
         print(magentaStr("\n==> Testing tomotwin - clustering-based picking (step 1):"))
         protPicking = self.newProtocol(ProtTomoTwinClusterCreateUmaps,
                                        inputTomos=protImportTomo.Tomograms,
-                                       batchTomos=128,
-                                       zMin=200, zMax=204)
+                                       inputMasks=protCreateMasks.outputMasks,
+                                       batchTomos=400)
         self.launchProtocol(protPicking)
         self.assertTrue(protPicking.isFinished(),
                         "Tomotwin cluster-based embedding has failed")
