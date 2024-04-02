@@ -69,4 +69,5 @@ class ViewerNapariDialog(ToolbarListDialog):
     def launchNapari(self, tomoFn, tlocFn):
         from tomotwin import Plugin, NAPARI_BOXMANAGER
         args = f"{tomoFn} {tlocFn}"
-        Plugin.runNapariBoxManager(self.prot.getProject().getPath(), NAPARI_BOXMANAGER, args)
+        Plugin.runNapariBoxManager(self.prot.getProject().getPath(),
+                                   NAPARI_BOXMANAGER, args)

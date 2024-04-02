@@ -52,7 +52,7 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
     def _defineParams(self, form):
         form.addSection(label='Input')
         form.addHidden(params.GPU_LIST, params.StringParam,
-                       default='0', help="Choose GPU IDs")
+                       default='0,1', help="Choose GPU IDs")
         form.addParam('inputTomos', params.PointerParam,
                       pointerClass='SetOfTomograms',
                       label="Input tomograms", important=True,
@@ -60,14 +60,13 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
                            '10 A/px in advance. Tomograms should be '
                            'without denoising or lowpass filtering.')
 
-        if Plugin.versionGE("0.7.0"):
-            form.addParam('roiEstimate', params.EnumParam,
-                          choices=['median', 'intensity'],
-                          default=0,
-                          display=params.EnumParam.DISPLAY_HLIST,
-                          label='ROI estimation based on:',
-                          help='Estimate potential ROIs based on median '
-                               'embedding (default) or intensity values.')
+        form.addParam('roiEstimate', params.EnumParam,
+                      choices=['median', 'intensity'],
+                      default=0,
+                      display=params.EnumParam.DISPLAY_HLIST,
+                      label='ROI estimation based on:',
+                      help='Estimate potential ROIs based on median '
+                           'embedding (default) or intensity values.')
 
         form.addParallelSection(threads=1)
 
@@ -95,18 +94,13 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
 
     def createMaskStep(self, tomoId):
         """ Create mask for each tomo. """
-        args = ["embedding_mask"]
-
-        if Plugin.versionGE("0.7.0"):
-            args.extend([
-                f"{self.getEnumText('roiEstimate')}",
-                f"-m {Plugin.getVar(TOMOTWIN_MODEL)}"
-            ])
-
-        args.extend([
+        args = [
+            "embedding_mask",
+            self.getEnumText('roiEstimate'),
             f"-i {tomoId}.mrc",
+            f"-m {Plugin.getVar(TOMOTWIN_MODEL)}",
             "-o ../extra/"
-        ])
+        ]
 
         self.runJob(self.getProgram("tomotwin_tools.py"), " ".join(args),
                     env=Plugin.getEnviron(),

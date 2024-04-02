@@ -23,3 +23,12 @@
 # *  e-mail address 'scipion@cnb.csic.es'
 # *
 # **************************************************************************
+
+from pyworkflow.tests import DataSet
+
+DataSet(name='tomotwin',
+        folder='tomotwin',
+        files={
+            'tomo': 'tomo.mrc',
+            'reference': 'reference_0.mrc'
+        })

@@ -57,7 +57,7 @@ class ProtTomoTwinBase(ProtTomoPicking):
     def _defineInputParams(self, form):
         form.addSection(label='Input')
         form.addHidden(params.GPU_LIST, params.StringParam,
-                       default='0', help="Choose GPU IDs")
+                       default='0,1', help="Choose GPU IDs")
         form.addParam('inputTomos', params.PointerParam,
                       pointerClass='SetOfTomograms',
                       label="Input tomograms", important=True,
@@ -77,9 +77,9 @@ class ProtTomoTwinBase(ProtTomoPicking):
         form.addParam('inputMasks', params.PointerParam,
                       pointerClass='SetOfTomoMasks',
                       label='Input masks', allowsNull=True,
-                      help='With TomoTwin >=0.5, the embedding command supports the '
-                           'use of masks. With masks you can define which regions '
-                           'of your tomogram get actually embedded and therefore '
+                      help='The embedding command supports the use of masks. '
+                           'With masks you can define which regions of your '
+                           'tomogram get actually embedded and therefore '
                            'speedup the embedding.')
 
     def _defineEmbedParams(self, form):
