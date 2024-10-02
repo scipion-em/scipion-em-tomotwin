@@ -96,11 +96,6 @@ class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
                                    self._getExtraPath(tomoId))
         args = f"{tomoPath}"
 
-        if not Plugin.versionGE("0.8.0"):
-            maskFn = f"{tomoId}_embeddings_label_mask.mrci"
-            if os.path.exists(self._getExtraPath(tomoId, maskFn)):
-                args += f" {maskFn}"
-
         text = [
             "Next open the napari-tomotwin clustering tool ",
             "via Plugins -> napari-tomotwin -> Cluster UMAP embeddings. ",

@@ -32,7 +32,7 @@ from pyworkflow import Config
 from .constants import *
 
 
-__version__ = '3.5'
+__version__ = '3.5.1'
 _references = ['Rice2022']
 _logo = "tomotwin_logo.png"
 
@@ -98,15 +98,14 @@ class Plugin(pwem.Plugin):
     @classmethod
     def addTomoTwinPackage(cls, env, version, default=False):
         ENV_NAME = getTomoTwinEnvName(version)
-        git_version = f"v{version}" if version != "0.7.0" else version
         installCmds = [
             f"cd .. && rmdir tomotwin-{version} &&",
             f"git clone https://github.com/MPI-Dortmund/tomotwin-cryoet.git {ENV_NAME} &&",
             f"cd {ENV_NAME} && {cls.getCondaActivationCmd()}",
-            f"git checkout {git_version} &&",
+            f"git checkout v{version} &&",
             f"conda create -y -n {ENV_NAME} -c nvidia -c pytorch -c rapidsai -c conda-forge",
-            "'pytorch>=2.1' torchvision 'pandas<2' scipy numpy matplotlib",
-            "pytables cuml=23.10 cuda-version=11.8 'protobuf>3.20'",
+            "'pytorch>=2.1' torchvision pandas scipy numpy matplotlib",
+            "pytables cuml=24.08 cuda-version=11.8 'protobuf>3.20'",
             "tensorboard optuna mysql-connector-python pytorch-metric-learning &&",
             f"conda activate {ENV_NAME} &&",
             "pip install -e .",
