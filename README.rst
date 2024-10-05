@@ -61,13 +61,13 @@ python with conda ones. One example of this could can be seen below but
 depending on your conda version and shell you will need something different:
 CONDA_ACTIVATION_CMD = eval "$(/extra/miniconda3/bin/conda shell.bash hook)"
 
-*TOMOTWIN_ENV_ACTIVATION* (default = conda activate tomotwin-0.9.0b1):
-Command to activate the TomoTwin environment. Tomotwin uses cuda-11.8, so you might want to activate specific CUDA libs via e.g. `TOMOTWIN_ENV_ACTIVATION = . /etc/profile.d/lmod.sh && module load cuda/11.8 && conda activate tomotwin-0.8.0`
+*TOMOTWIN_ENV_ACTIVATION* (default = conda activate tomotwin-0.9.1):
+Command to activate the TomoTwin environment. Tomotwin uses cuda-11.8, so you might want to activate specific CUDA libs via e.g. `TOMOTWIN_ENV_ACTIVATION = . /etc/profile.d/lmod.sh && module load cuda/11.8 && conda activate tomotwin-0.9.1`
 
 *TOMOTWIN_MODEL* (default = software/em/tomotwin_model-092023/tomotwin_model_p120_092023_loss.pth):
 Path to the pre-trained model.
 
-*NAPARI_ENV_ACTIVATION* (default = conda activate napari-0.4.17):
+*NAPARI_ENV_ACTIVATION* (default = conda activate napari-0.4.19):
 Command to activate the Napari viewer environment.
 
 Verifying
@@ -80,7 +80,7 @@ To check the installation, simply run the following Scipion tests:
 Supported versions
 ------------------
 
-0.7.0, 0.8.0, 0.9.0b1
+0.8.0, 0.9.0b1, 0.9.1
 
 Protocols
 ----------
