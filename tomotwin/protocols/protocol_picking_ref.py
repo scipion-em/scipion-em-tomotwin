@@ -40,10 +40,7 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
     _devStatus = BETA
     _possibleOutputs = {'output3DCoordinates': SetOfCoordinates3D}
     _requiresRefs = True
-
-    def __init__(self, **kwargs):
-        ProtTomoTwinBase.__init__(self, **kwargs)
-        self.stepsExecutionMode = params.STEPS_PARALLEL
+    stepsExecutionMode = params.STEPS_PARALLEL
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):

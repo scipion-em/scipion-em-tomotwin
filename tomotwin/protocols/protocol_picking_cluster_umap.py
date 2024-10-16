@@ -37,10 +37,7 @@ class ProtTomoTwinClusterCreateUmaps(ProtTomoTwinBase):
 
     _label = 'clustering-based picking (step 1)'
     _devStatus = BETA
-
-    def __init__(self, **kwargs):
-        ProtTomoTwinBase.__init__(self, **kwargs)
-        self.stepsExecutionMode = params.STEPS_PARALLEL
+    stepsExecutionMode = params.STEPS_PARALLEL
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):

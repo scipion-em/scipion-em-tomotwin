@@ -1,3 +1,5 @@
+3.5.2:
+   - adapted to execution mode
 3.5.1:
     - add v0.9.1, update installer
 3.5:
