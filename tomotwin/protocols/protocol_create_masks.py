@@ -43,10 +43,7 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
     _label = 'create tomo masks'
     _devStatus = BETA
     _possibleOutputs = {'outputMasks': SetOfTomoMasks}
-
-    def __init__(self, **kwargs):
-        ProtCreateMask3D.__init__(self, **kwargs)
-        self.stepsExecutionMode = params.STEPS_PARALLEL
+    stepsExecutionMode = params.STEPS_PARALLEL
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):
