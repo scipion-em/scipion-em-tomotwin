@@ -53,10 +53,11 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._createFilenameTemplates()
-        convertStepId = self._insertFunctionStep(self.convertInputStep)
+        convertStepId = self._insertFunctionStep(self.convertInputStep, needsGPU=False)
         deps = []
         embedRefStepId = self._insertFunctionStep(self.embedRefsStep,
-                                                  prerequisites=convertStepId)
+                                                  prerequisites=convertStepId,
+                                                  needsGPU=True)
         deps.append(embedRefStepId)
 
         tomoIds = self._getInputTomos().aggregate(["COUNT"], "_tsId", ["_tsId"])
@@ -65,12 +66,13 @@ class ProtTomoTwinRefPicking(ProtTomoTwinBase):
         for tomoId in tomoIds:
             embedTomoStepId = self._insertFunctionStep(self.embedTomoStep,
                                                        tomoId,
-                                                       prerequisites=convertStepId)
+                                                       prerequisites=convertStepId,
+                                                       needsGPU=True)
             deps.append(embedTomoStepId)
             self._insertFunctionStep(self.pickingStep, tomoId,
-                                     prerequisites=deps)
+                                     prerequisites=deps, needsGPU=False)
 
-        self._insertFunctionStep(self.createOutputStep)
+        self._insertFunctionStep(self.createOutputStep, needsGPU=False)
 
     # --------------------------- STEPS functions -----------------------------
     def embedRefsStep(self):

@@ -60,17 +60,17 @@ class ProtTomoTwinClusterPicking(ProtTomoTwinBase):
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._createFilenameTemplates()
-        self._insertFunctionStep(self.convertInputStep)
+        self._insertFunctionStep(self.convertInputStep, needsGPU=False)
 
         tomoIds = self._getInputTomos().aggregate(["COUNT"], "_tsId", ["_tsId"])
         tomoIds = set([d['_tsId'] for d in tomoIds])
 
         for tomoId in tomoIds:
             makePath(self._getExtraPath(tomoId))
-            self._insertFunctionStep(self.pickClustersStep, tomoId)
-            self._insertFunctionStep(self.pickingStep, tomoId)
+            self._insertFunctionStep(self.pickClustersStep, tomoId, needsGPU=True)
+            self._insertFunctionStep(self.pickingStep, tomoId, needsGPU=False)
 
-        self._insertFunctionStep(self.createOutputStep)
+        self._insertFunctionStep(self.createOutputStep, needsGPU=False)
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):

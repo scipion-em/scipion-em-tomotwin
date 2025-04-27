@@ -69,17 +69,18 @@ class ProtTomoTwinCreateMasks(ProtCreateMask3D):
 
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
-        convertStepId = self._insertFunctionStep(self.convertInputStep)
+        convertStepId = self._insertFunctionStep(self.convertInputStep, needsGPU=False)
         deps = []
         tomoIds = self.inputTomos.get().aggregate(["COUNT"], "_tsId", ["_tsId"])
         tomoIds = set([d['_tsId'] for d in tomoIds])
 
         for tomoId in tomoIds:
             stepId = self._insertFunctionStep(self.createMaskStep, tomoId,
-                                              prerequisites=convertStepId)
+                                              prerequisites=convertStepId, needsGPU=True)
             deps.append(stepId)
 
-        self._insertFunctionStep(self.createOutputStep, prerequisites=deps)
+        self._insertFunctionStep(self.createOutputStep, prerequisites=deps,
+                                 needsGPU=False)
 
     # --------------------------- STEPS functions -----------------------------
     def convertInputStep(self):
