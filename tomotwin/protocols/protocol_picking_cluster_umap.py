@@ -37,10 +37,7 @@ class ProtTomoTwinClusterCreateUmaps(ProtTomoTwinBase):
 
     _label = 'clustering-based picking (step 1)'
     _devStatus = BETA
-
-    def __init__(self, **kwargs):
-        ProtTomoTwinBase.__init__(self, **kwargs)
-        self.stepsExecutionMode = params.STEPS_PARALLEL
+    stepsExecutionMode = params.STEPS_PARALLEL
 
     # --------------------------- DEFINE param functions ----------------------
     def _defineParams(self, form):
@@ -52,16 +49,16 @@ class ProtTomoTwinClusterCreateUmaps(ProtTomoTwinBase):
     # --------------------------- INSERT steps functions ----------------------
     def _insertAllSteps(self):
         self._createFilenameTemplates()
-        convertStepId = self._insertFunctionStep(self.convertInputStep)
+        convertStepId = self._insertFunctionStep(self.convertInputStep, needsGPU=False)
 
         tomoIds = self._getInputTomos().aggregate(["COUNT"], "_tsId", ["_tsId"])
         tomoIds = set([d['_tsId'] for d in tomoIds])
 
         for tomoId in tomoIds:
             tomoStep = self._insertFunctionStep(self.embedTomoStep, tomoId,
-                                                prerequisites=convertStepId)
+                                                prerequisites=convertStepId, needsGPU=True)
             self._insertFunctionStep(self.createUmapsStep, tomoId,
-                                     prerequisites=tomoStep)
+                                     prerequisites=tomoStep, needsGPU=True)
 
     # --------------------------- STEPS functions -----------------------------
     def createUmapsStep(self, tomoId):
@@ -73,6 +70,8 @@ class ProtTomoTwinClusterCreateUmaps(ProtTomoTwinBase):
     def _summary(self):
         if self.isFinished():
             return ["UMAP embeddings created for input tomograms."]
+        else:
+            return []
 
     # --------------------------- UTILS functions ------------------------------
     def _getUmapArgs(self, tomoId):
